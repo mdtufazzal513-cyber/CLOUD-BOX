@@ -21,12 +21,31 @@
         .nav-btn.active { color: #60a5fa; }
         /* Desktop Sidebar Active State */
         .sidebar-btn.active { background: #1e293b; border-left: 4px solid #60a5fa; color: #60a5fa; }
+        
+        /* Multi-Select Styles for Admin */
+        .selected-card { background-color: rgba(96, 165, 250, 0.15) !important; border-color: rgba(96, 165, 250, 0.5) !important; }
+        .select-checkbox { transition: all 0.2s ease; }
+        .no-select { user-select: none; -webkit-user-select: none; }
     </style>
 </head>
 <body class="flex flex-col md:flex-row">
 
+    <!-- Global Loading/Splash Screen for Admin -->
+    <div id="adminSplashScreen" class="fixed inset-0 z-[500] bg-slate-900 flex flex-col items-center justify-center transition-opacity duration-300">
+        <div class="w-20 h-20 bg-blue-500 rounded-3xl flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(59,130,246,0.5)] animate-pulse">
+            <i class="fa-solid fa-cloud text-4xl text-white"></i>
+        </div>
+        <h1 class="text-2xl font-bold text-white mb-1">CloudBox</h1>
+        <p class="text-blue-400 text-[10px] font-bold tracking-widest uppercase mb-2">Admin Panel</p>
+        <div class="flex items-center gap-2 mt-4">
+            <div class="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style="animation-delay: 0s;"></div>
+            <div class="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style="animation-delay: 0.2s;"></div>
+            <div class="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style="animation-delay: 0.4s;"></div>
+        </div>
+    </div>
+
     <!-- Auth Section (Login) -->
-    <div id="authSection" class="w-full max-w-md mx-auto glass p-8 rounded-2xl mt-20 shadow-2xl text-center">
+    <div id="authSection" class="hidden w-full max-w-md mx-auto glass p-8 rounded-2xl mt-20 shadow-2xl text-center">
         <h2 class="text-3xl font-bold mb-2 text-red-400"><i class="fa-solid fa-user-shield"></i> Admin Panel</h2>
         <p class="text-gray-400 mb-6 text-sm">Strictly restricted to administrators</p>
         <input type="email" id="email" placeholder="Admin Email" class="w-full mb-4 p-3 rounded bg-gray-800 border border-gray-600 focus:outline-none focus:border-red-400">
@@ -45,18 +64,13 @@
                 <button onclick="showTab('dashboard')" id="sidebar-dashboard" class="sidebar-btn active w-full flex items-center p-3 rounded-r-lg hover:bg-gray-800 transition">
                     <i class="fa-solid fa-chart-pie mr-3"></i> Dashboard
                 </button>
-                <button onclick="showTab('allFiles')" id="sidebar-allFiles" class="sidebar-btn w-full flex items-center p-3 rounded-r-lg hover:bg-gray-800 transition">
-                    <i class="fa-solid fa-folder-open mr-3"></i> All Files
+                <button onclick="showTab('users')" id="sidebar-users" class="sidebar-btn w-full flex items-center p-3 rounded-r-lg hover:bg-gray-800 transition">
+                    <i class="fa-solid fa-users-gear mr-3"></i> Users
                 </button>
                 <button onclick="showTab('settings')" id="sidebar-settings" class="sidebar-btn w-full flex items-center p-3 rounded-r-lg hover:bg-gray-800 transition">
                     <i class="fa-solid fa-gear mr-3"></i> Settings
                 </button>
             </nav>
-            <div class="p-4 border-t border-gray-700">
-                <button onclick="logout()" class="w-full bg-gray-800 p-2 rounded hover:bg-red-600 transition text-sm">
-                    <i class="fa-solid fa-right-from-bracket mr-2"></i> Logout
-                </button>
-            </div>
         </div>
 
         <!-- Main Content Area -->
@@ -64,7 +78,12 @@
             
             <!-- Dashboard Tab -->
             <div id="dashboardTab">
-                <h1 class="text-3xl font-bold mb-8">Dashboard Overview</h1>
+                <!-- Sticky Glass Header -->
+                <div class="sticky -top-4 md:-top-8 z-40 -mx-4 -mt-4 md:-mx-8 md:-mt-8 px-4 py-3 md:px-8 md:py-4 mb-6 bg-slate-900/80 backdrop-blur-md border-b border-gray-700/50 flex items-center">
+                    <h1 class="text-base font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-chart-pie text-blue-400 text-sm"></i> Dashboard Overview
+                    </h1>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Total Users Card -->
                     <div class="glass p-6 rounded-2xl flex items-center shadow-lg border-l-4 border-blue-500">
@@ -89,70 +108,409 @@
                 </div>
             </div>
 
-            <!-- All Files Tab -->
-            <div id="allFilesTab" class="hidden">
-                <h1 class="text-3xl font-bold mb-6">Manage User Files</h1>
+            <!-- Users Tab (User Management) -->
+            <div id="usersTab" class="hidden">
+                
+                <!-- Sticky Glass Header & Search -->
+                <div class="sticky -top-4 md:-top-8 z-40 -mx-4 -mt-4 md:-mx-8 md:-mt-8 px-4 py-3 md:px-8 md:py-3 mb-4 bg-slate-900/80 backdrop-blur-md border-b border-gray-700/50 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <div class="flex items-center gap-2 shrink-0">
+                        <i class="fa-solid fa-users-gear text-red-400 text-sm"></i>
+                        <h1 class="text-base font-bold text-white">User Management</h1>
+                    </div>
+
+                    <!-- Compact Search Bar in Header -->
+                    <div class="relative w-full md:max-w-xs shrink-0">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-gray-400 text-xs"></i>
+                        <input type="text" id="userSearchInput" onkeyup="searchAndFilterUsers()" placeholder="Search users..." class="w-full pl-8 pr-3 py-1.5 bg-gray-800 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500 text-sm text-white transition shadow-inner">
+                    </div>
+                </div>
+
+                <!-- Compact Filter Chips -->
+                <div class="flex flex-wrap items-center gap-2 mb-4 bg-gray-800/30 p-1.5 rounded-lg border border-gray-700/50">
+                    <span class="text-[10px] font-bold text-gray-500 mx-2 flex items-center"><i class="fa-solid fa-filter mr-1"></i> FILTER</span>
+                    
+                    <button onclick="applyUserFilter('all', this)" class="user-filter-btn px-3 py-1 rounded text-xs font-semibold transition bg-blue-600 text-white shadow-sm">All</button>
+                    
+                    <button onclick="applyUserFilter('live', this)" class="user-filter-btn px-3 py-1 rounded text-xs font-semibold transition bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700 flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> Live
+                    </button>
+                    
+                    <button onclick="applyUserFilter('active', this)" class="user-filter-btn px-3 py-1 rounded text-xs font-semibold transition bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700">Active</button>
+                    
+                    <button onclick="applyUserFilter('frozen', this)" class="user-filter-btn px-3 py-1 rounded text-xs font-semibold transition bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700 flex items-center gap-1.5">
+                        <i class="fa-solid fa-snowflake text-blue-300"></i> Frozen
+                    </button>
+                    
+                    <button onclick="applyUserFilter('new', this)" class="user-filter-btn px-3 py-1 rounded text-xs font-semibold transition bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700">New (7d)</button>
+                </div>
+
                 <div class="glass rounded-xl overflow-hidden shadow-lg">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-sm whitespace-nowrap">
                             <thead class="bg-gray-800 text-gray-300">
                                 <tr>
-                                    <th class="p-4">User UID</th>
-                                    <th class="p-4">File Name</th>
-                                    <th class="p-4">Size</th>
+                                    <th class="p-4">User Details</th>
+                                    <th class="p-4">Status</th>
+                                    <th class="p-4">Total Files</th>
+                                    <th class="p-4">Storage Used</th>
                                     <th class="p-4 text-center">Action</th>
                                 </tr>
                             </thead>
-                            <tbody id="allFilesList" class="divide-y divide-gray-700">
-                                <!-- JS will populate this -->
-                                <tr><td colspan="4" class="p-4 text-center text-gray-400">Loading files...</td></tr>
+                            <tbody id="allUsersList" class="divide-y divide-gray-700">
+                                <tr><td colspan="5" class="p-4 text-center text-gray-400">Loading users...</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
 
+            <!-- Admin File Explorer Tab -->
+            <div id="allFilesTab" class="hidden h-full flex flex-col pb-10">
+                <!-- Explorer Header & Breadcrumbs -->
+                <div class="glass p-4 rounded-xl shadow-lg mb-4 shrink-0 border border-gray-700">
+                    <div class="flex items-center justify-between mb-3">
+                        <button onclick="showTab('users')" class="text-sm bg-gray-800 hover:bg-gray-700 border border-gray-600 px-4 py-2 rounded-lg transition text-gray-300 shadow active:scale-95 flex items-center">
+                            <i class="fa-solid fa-arrow-left mr-2"></i> Users List
+                        </button>
+                        <div class="text-blue-400 font-bold text-sm bg-blue-500/10 px-3 py-1.5 rounded-lg" id="adminDriveUserEmail">
+                            User Drive
+                        </div>
+                    </div>
+                    
+                    <!-- Breadcrumbs & View Toggle -->
+                    <div class="flex items-center justify-between gap-2 bg-gray-900/50 p-2.5 rounded-lg border border-gray-700/50">
+                        <div class="flex items-center gap-2 overflow-hidden">
+                            <button id="adminFolderBackBtn" onclick="adminGoBackFolder()" class="hidden w-7 h-7 bg-gray-800 border border-gray-600 rounded flex items-center justify-center text-gray-300 hover:bg-gray-700 transition shrink-0">
+                                <i class="fa-solid fa-arrow-up"></i>
+                            </button>
+                            <div id="adminBreadcrumbs" class="flex items-center gap-1.5 overflow-x-auto whitespace-nowrap text-sm font-semibold text-gray-300 scrollable-content">
+                                <span>Root</span>
+                            </div>
+                        </div>
+                        
+                        <!-- View Toggles (Grid/List) -->
+                        <div class="flex items-center bg-gray-800 rounded-lg p-1 border border-gray-700 shrink-0">
+                            <button onclick="changeAdminViewMode('list')" class="admin-view-btn-list w-8 h-8 rounded text-blue-400 bg-gray-700 shadow flex items-center justify-center transition"><i class="fa-solid fa-list text-sm"></i></button>
+                            <button onclick="changeAdminViewMode('grid')" class="admin-view-btn-grid w-8 h-8 rounded text-gray-400 hover:text-white flex items-center justify-center transition"><i class="fa-solid fa-border-all text-sm"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Explorer Content (Folders & Files combined like User Panel) -->
+                <div class="flex-1 overflow-y-auto pr-2">
+                    <div id="adminMainListContainer" class="flex flex-col gap-3 pb-4"></div>
+
+                    <!-- Empty State -->
+                    <div id="adminEmptyState" class="hidden flex flex-col items-center justify-center py-20 opacity-50">
+                        <i class="fa-solid fa-folder-open text-6xl text-gray-500 mb-4"></i>
+                        <p class="text-gray-400">This folder is empty</p>
+                    </div>
+                </div>
+            </div>
+
             <!-- Settings Tab -->
             <div id="settingsTab" class="hidden">
-                <h1 class="text-3xl font-bold mb-6">Panel Settings</h1>
-                <div class="glass p-8 rounded-2xl text-center shadow-lg">
-                    <i class="fa-solid fa-screwdriver-wrench text-6xl text-gray-500 mb-4"></i>
-                    <h2 class="text-xl font-semibold text-gray-300">No settings available yet.</h2>
-                    <p class="text-gray-500 mt-2">More features will be added in the future.</p>
+                <!-- Sticky Glass Header with Mini Logout Button -->
+                <div class="sticky -top-4 md:-top-8 z-40 -mx-4 -mt-4 md:-mx-8 md:-mt-8 px-4 py-3 md:px-8 md:py-4 mb-6 bg-slate-900/80 backdrop-blur-md border-b border-gray-700/50 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-gray-400 text-sm"></i>
+                        <h1 class="text-base font-bold text-white leading-none">Panel Settings</h1>
+                    </div>
+                    
+                    <!-- Logout Button (Only in Settings Tab) -->
+                    <button onclick="logout()" title="Logout Admin" class="w-8 h-8 bg-gray-800 border border-gray-700 text-red-400 hover:text-white hover:bg-red-500 hover:border-red-500 rounded-full flex items-center justify-center transition shadow-sm active:scale-90 shrink-0">
+                        <i class="fa-solid fa-power-off text-sm"></i>
+                    </button>
+                </div>
+                
+                <!-- Settings Modular Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-10">
+                    
+                    <!-- 1. Storage & Limits Module -->
+                    <div class="glass rounded-2xl shadow-lg border border-gray-700/50 overflow-hidden flex flex-col">
+                        <div class="px-5 py-4 border-b border-gray-700/50 bg-gray-800/30 flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 text-sm"><i class="fa-solid fa-database"></i></div>
+                            <h2 class="text-base font-bold text-gray-200">Storage & Limits</h2>
+                        </div>
+                        <div class="p-5 space-y-5 flex-1 bg-gray-800/10">
+                            
+                            <!-- Global Storage Setting -->
+                            <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                                <div class="mb-1 md:mb-0">
+                                    <h3 class="font-bold text-white text-sm">Default Quota Per User</h3>
+                                    <p class="text-[11px] text-gray-400 mt-0.5">Maximum storage space allowed for each user.</p>
+                                </div>
+                                <div class="flex items-center w-full md:w-auto gap-2 bg-gray-900/80 p-1.5 rounded-xl border border-gray-700 shadow-inner">
+                                    <input type="number" id="adminStorageLimitVal" min="1" max="99999" onkeypress="return (event.charCode >= 48 && event.charCode <= 57)" oninput="if(this.value.length > 5) this.value = this.value.slice(0,5); markUnsaved('btnSaveLimit');" placeholder="25" class="w-full md:w-20 bg-transparent text-white px-2 py-1.5 focus:outline-none text-center text-sm font-bold transition">
+                                    <select id="adminStorageLimitUnit" onchange="markUnsaved('btnSaveLimit')" class="shrink-0 bg-gray-800 border border-gray-600 text-white px-2 py-1.5 rounded-lg focus:outline-none text-sm cursor-pointer">
+                                        <option value="GB">GB</option>
+                                        <option value="MB">MB</option>
+                                    </select>
+                                    <button onclick="saveGlobalStorageLimit()" id="btnSaveLimit" class="shrink-0 bg-gray-700 text-gray-400 px-4 py-1.5 rounded-lg font-bold text-sm transition-all duration-300 w-24 flex items-center justify-center gap-1.5 pointer-events-none">
+                                        <i class="fa-solid fa-check"></i> Saved
+                                    </button>
+                                </div>
+                            </div>
+
+                            <hr class="border-gray-700/40">
+
+                            <!-- Max Upload File Size Setting -->
+                            <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                                <div class="mb-1 md:mb-0">
+                                    <h3 class="font-bold text-white text-sm">Max Upload File Size</h3>
+                                    <p class="text-[11px] text-gray-400 mt-0.5">Limit the size of a single file upload.</p>
+                                </div>
+                                <div class="flex items-center w-full md:w-auto gap-2 bg-gray-900/80 p-1.5 rounded-xl border border-gray-700 shadow-inner">
+                                    <input type="number" id="adminMaxFileSizeVal" min="1" max="99999" onkeypress="return (event.charCode >= 48 && event.charCode <= 57)" oninput="if(this.value.length > 5) this.value = this.value.slice(0,5); markUnsaved('btnSaveMaxFile');" placeholder="500" class="w-full md:w-20 bg-transparent text-white px-2 py-1.5 focus:outline-none text-center text-sm font-bold transition">
+                                    <select id="adminMaxFileSizeUnit" onchange="markUnsaved('btnSaveMaxFile')" class="shrink-0 bg-gray-800 border border-gray-600 text-white px-2 py-1.5 rounded-lg focus:outline-none text-sm cursor-pointer">
+                                        <option value="GB">GB</option>
+                                        <option value="MB" selected>MB</option>
+                                    </select>
+                                    <button onclick="saveMaxFileSize()" id="btnSaveMaxFile" class="shrink-0 bg-gray-700 text-gray-400 px-4 py-1.5 rounded-lg font-bold text-sm transition-all duration-300 w-24 flex items-center justify-center gap-1.5 pointer-events-none">
+                                        <i class="fa-solid fa-check"></i> Saved
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Security & Access Module -->
+                    <div class="glass rounded-2xl shadow-lg border border-gray-700/50 overflow-hidden flex flex-col">
+                        <div class="px-6 py-4 border-b border-gray-700/50 bg-gray-800/30 flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 text-sm"><i class="fa-solid fa-shield-halved"></i></div>
+                            <h2 class="text-lg font-bold text-gray-200">Security & Access</h2>
+                        </div>
+                        <div class="p-6 space-y-6 flex-1 bg-gray-800/10">
+                            
+                            <!-- Future Setting Placeholder -->
+                            <div class="flex items-center justify-between opacity-50 grayscale pointer-events-none">
+                                <div>
+                                    <h3 class="font-bold text-white text-sm">Manage Admins</h3>
+                                    <p class="text-[11px] text-gray-400 mt-0.5">Add or remove administrator privileges.</p>
+                                </div>
+                                <span class="bg-gray-700 text-gray-300 text-[9px] font-bold px-2 py-1 rounded tracking-widest uppercase">Coming Soon</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. System Configuration Module -->
+                    <div class="glass rounded-2xl shadow-lg border border-gray-700/50 overflow-hidden flex flex-col transition-all duration-300" id="adminMaintenanceCard">
+                        <div class="px-5 py-4 border-b border-gray-700/50 bg-gray-800/30 flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 text-sm"><i class="fa-solid fa-gears"></i></div>
+                                <h2 class="text-base font-bold text-gray-200">System Configuration</h2>
+                            </div>
+                            <span id="maintenanceStatusBadge" class="bg-gray-700 text-gray-300 text-[9px] font-bold px-2 py-1 rounded tracking-widest uppercase shadow-inner">OFFLINE</span>
+                        </div>
+                        <div class="p-5 flex-1 bg-gray-800/10">
+                            
+                            <!-- Maintenance Mode Interface -->
+                            <div>
+                                <div class="flex items-center justify-between mb-4">
+                                    <div>
+                                        <h3 class="font-bold text-white text-sm flex items-center gap-2">Maintenance Mode</h3>
+                                        <p class="text-[11px] text-gray-400 mt-0.5">Show a live countdown to users & block access.</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" id="maintenanceToggle" class="sr-only peer" onchange="toggleMaintenanceMode(this.checked)">
+                                        <div class="w-11 h-6 bg-gray-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600 shadow-inner"></div>
+                                    </label>
+                                </div>
+
+                                <!-- Timer Controls (Hidden when OFF) -->
+                                <div id="maintenanceTimerControls" class="hidden bg-gray-900/50 p-4 rounded-xl border border-gray-700 mt-2 shadow-inner">
+                                    <p class="text-xs font-semibold text-purple-400 mb-2 flex items-center gap-1.5"><i class="fa-solid fa-calendar-check animate-pulse"></i> Set Unlock Date & Time</p>
+                                    <div class="flex flex-col md:flex-row items-center gap-3">
+                                        <input type="datetime-local" id="maintenanceEndDateTime" class="w-full md:flex-1 bg-gray-800 border border-gray-600 text-white px-3 py-2 rounded-lg focus:outline-none text-sm font-semibold tracking-wide cursor-pointer appearance-none color-scheme-dark">
+                                        <button onclick="updateMaintenanceTime()" class="w-full md:w-auto bg-purple-600 hover:bg-purple-500 active:scale-95 text-white px-5 py-2 rounded-lg font-bold text-sm transition shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2 shrink-0">
+                                            <i class="fa-solid fa-stopwatch"></i> Set Target
+                                        </button>
+                                    </div>
+                                    <p id="maintenanceActiveText" class="text-[10px] text-gray-400 mt-3 text-center"></p>
+                                </div>
+                                <style>
+                                    /* Fix for datetime picker icon color on dark mode */
+                                    input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+                                        filter: invert(1); cursor: pointer;
+                                    }
+                                </style>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- Server Core Config Module -->
+                    <div class="glass rounded-2xl shadow-lg border border-blue-500/30 overflow-hidden flex flex-col shadow-[0_0_20px_rgba(59,130,246,0.1)]">
+                        <div class="px-6 py-4 border-b border-gray-700/50 bg-gray-800/50 flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 text-sm"><i class="fa-solid fa-server"></i></div>
+                                <h2 class="text-lg font-bold text-gray-200">Server Core Config</h2>
+                            </div>
+                            <button onclick="reloadTelegramCluster()" id="btnReloadCluster" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 shadow-lg active:scale-95">
+                                <i class="fa-solid fa-rotate"></i> Restart Server
+                            </button>
+                        </div>
+                        <div class="p-6 space-y-4 flex-1 bg-gray-800/10">
+                            
+                            <div>
+                                <label class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">API ID & HASH</label>
+                                <div class="flex gap-2">
+                                    <input type="text" id="adminApiId" placeholder="API_ID" class="w-1/3 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+                                    <input type="text" id="adminApiHash" placeholder="API_HASH" class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">User Sessions (Comma Separated for Multi-Session)</label>
+                                <textarea id="adminSessions" rows="2" placeholder="Session1, Session2, Session3..." class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 resize-none font-mono"></textarea>
+                            </div>
+
+                            <div>
+                                <label class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">Channels (1st is Primary, rest are Backups)</label>
+                                <input type="text" id="adminChannels" placeholder="-100123..., -100456..., -100789..." class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 font-mono">
+                            </div>
+
+                            <button onclick="saveServerCoreConfig()" id="btnSaveCore" class="w-full bg-gray-700 hover:bg-blue-600 active:scale-95 text-white font-bold py-2.5 rounded-xl transition shadow-md">
+                                Save Configurations
+                            </button>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
         </div>
 
         <!-- Mobile Bottom Nav (App like) -->
-        <div class="md:hidden fixed bottom-0 left-0 w-full glass border-t border-gray-700 flex justify-around items-center pb-safe pt-2 pb-2 z-50">
-            <button onclick="showTab('dashboard')" id="nav-dashboard" class="nav-btn active flex flex-col items-center p-2 text-gray-400 transition">
-                <i class="fa-solid fa-chart-pie text-xl mb-1"></i>
-                <span class="text-[10px]">Dashboard</span>
+        <div class="md:hidden fixed bottom-0 left-0 w-full glass border-t border-gray-700 flex justify-around items-center pt-1.5 z-50 shadow-[0_-10px_30px_rgba(0,0,0,0.4)]" style="padding-bottom: max(0.375rem, env(safe-area-inset-bottom));">
+            <button onclick="showTab('dashboard')" id="nav-dashboard" class="nav-btn active flex flex-col items-center py-1 px-3 text-gray-400 transition">
+                <i class="fa-solid fa-chart-pie text-lg mb-0.5"></i>
+                <span class="text-[10px] font-medium">Dashboard</span>
             </button>
-            <button onclick="showTab('allFiles')" id="nav-allFiles" class="nav-btn flex flex-col items-center p-2 text-gray-400 transition">
-                <i class="fa-solid fa-folder-open text-xl mb-1"></i>
-                <span class="text-[10px]">All Files</span>
+            <button onclick="showTab('users')" id="nav-users" class="nav-btn flex flex-col items-center py-1 px-3 text-gray-400 transition">
+                <i class="fa-solid fa-users-gear text-lg mb-0.5"></i>
+                <span class="text-[10px] font-medium">Users</span>
             </button>
-            <button onclick="showTab('settings')" id="nav-settings" class="nav-btn flex flex-col items-center p-2 text-gray-400 transition">
-                <i class="fa-solid fa-gear text-xl mb-1"></i>
-                <span class="text-[10px]">Settings</span>
-            </button>
-            <button onclick="logout()" class="flex flex-col items-center p-2 text-red-500 transition">
-                <i class="fa-solid fa-right-from-bracket text-xl mb-1"></i>
-                <span class="text-[10px]">Logout</span>
+            <button onclick="showTab('settings')" id="nav-settings" class="nav-btn flex flex-col items-center py-1 px-3 text-gray-400 transition">
+                <i class="fa-solid fa-gear text-lg mb-0.5"></i>
+                <span class="text-[10px] font-medium">Settings</span>
             </button>
         </div>
 
     </div>
 
+    <!-- USER DETAILS & ACTION MODAL -->
+        <div id="userActionModal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4">
+            <!-- Backdrop -->
+            <div class="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity" onclick="closeUserModal()"></div>
+            
+            <!-- Modal Card -->
+            <div id="userModalCard" class="relative glass bg-slate-900/95 w-full max-w-md rounded-3xl border border-gray-700 shadow-2xl overflow-hidden flex flex-col transform scale-95 opacity-0 transition-all duration-300">
+                
+                <!-- Header (User Info) -->
+                <div class="p-6 pb-4 flex justify-between items-start border-b border-gray-800">
+                    <div class="flex items-center gap-4 overflow-hidden">
+                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-blue-400 flex items-center justify-center text-white text-2xl shadow-lg flex-shrink-0">
+                            <i class="fa-solid fa-user-shield"></i>
+                        </div>
+                        <div class="overflow-hidden">
+                            <h2 id="modalUserEmail" class="text-lg font-bold text-white truncate w-full">user@email.com</h2>
+                            <p id="modalUserUid" class="text-[10px] text-gray-500 font-mono mt-0.5 truncate w-full">UID</p>
+                            <span id="modalUserStatus" class="inline-block mt-2 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border">STATUS</span>
+                        </div>
+                    </div>
+                    <button onclick="closeUserModal()" class="w-8 h-8 rounded-full bg-gray-800 hover:bg-red-500 text-gray-400 hover:text-white transition flex items-center justify-center flex-shrink-0">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="px-6 py-4 grid grid-cols-2 gap-4 bg-gray-800/30">
+                    <div class="bg-gray-800/80 border border-gray-700 p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-inner">
+                        <div class="w-8 h-8 rounded-full bg-blue-500/10 text-blue-400 flex items-center justify-center mb-2">
+                            <i class="fa-solid fa-file-invoice"></i>
+                        </div>
+                        <p class="text-[11px] text-gray-400 font-medium mb-0.5">Total Files</p>
+                        <h3 id="modalUserFiles" class="text-lg font-bold text-white">0</h3>
+                    </div>
+                    <div class="bg-gray-800/80 border border-gray-700 p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-inner">
+                        <div class="w-8 h-8 rounded-full bg-green-500/10 text-green-400 flex items-center justify-center mb-2">
+                            <i class="fa-solid fa-hard-drive"></i>
+                        </div>
+                        <p class="text-[11px] text-gray-400 font-medium mb-0.5">Storage Used</p>
+                        <h3 id="modalUserStorage" class="text-lg font-bold text-white">0 MB</h3>
+                    </div>
+                </div>
+                
+                <!-- Extra Info (Join Date & Last Active) -->
+                <div class="px-6 pb-2 grid grid-cols-1 gap-2 bg-gray-800/30">
+                    <div class="bg-gray-800/50 border border-gray-700 p-3 rounded-xl flex justify-between items-center shadow-inner">
+                        <span class="text-gray-400 text-[11px] font-semibold"><i class="fa-solid fa-calendar-plus mr-1.5 text-blue-400"></i>Joined</span>
+                        <span id="modalUserJoined" class="text-gray-200 text-xs font-bold text-right tracking-wide">Unknown</span>
+                    </div>
+                    <div class="bg-gray-800/50 border border-gray-700 p-3 rounded-xl flex justify-between items-center shadow-inner">
+                        <span class="text-gray-400 text-[11px] font-semibold"><i class="fa-solid fa-clock-rotate-left mr-1.5 text-green-400"></i>Last Active</span>
+                        <span id="modalUserLastActive" class="text-gray-200 text-xs font-bold text-right tracking-wide">Unknown</span>
+                    </div>
+                </div>
+
+                <!-- Action Buttons List (Designed for future expansion) -->
+                <div class="p-6 pt-4 space-y-3 overflow-y-auto max-h-60" id="modalActionsContainer">
+                    <!-- JS will inject buttons here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ADMIN SELECTION MODE HEADER -->
+        <div id="adminSelectionHeader" class="fixed top-0 left-0 md:left-64 right-0 bg-gray-900/95 backdrop-blur-md z-[60] px-6 py-4 flex justify-between items-center transition-transform duration-300 -translate-y-full border-b border-gray-700">
+            <div class="flex items-center gap-4">
+                <button onclick="closeAdminSelectionMode()" class="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-gray-300 hover:bg-gray-700 transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+                <h1 id="adminSelectionCountText" class="text-lg font-bold text-white">0 Selected</h1>
+            </div>
+            <button id="adminSelectAllBtn" onclick="toggleAdminSelectAll()" class="text-sm font-semibold text-blue-400 hover:text-blue-300 transition">Select All</button>
+        </div>
+
+        <!-- ADMIN SELECTION BOTTOM ACTION BAR -->
+        <div id="adminSelectionBottomBar" class="fixed bottom-0 left-0 md:left-64 right-0 bg-gray-900/95 backdrop-blur-md z-[60] px-6 py-3 flex justify-around items-center transition-transform duration-300 translate-y-full border-t border-gray-700 pb-safe">
+            <button onclick="adminMultiDownload()" class="flex flex-col items-center gap-1 text-gray-300 hover:text-blue-400 transition">
+                <div class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center"><i class="fa-solid fa-download"></i></div>
+                <span class="text-[10px] font-semibold">Download</span>
+            </button>
+            <button onclick="adminMultiDelete()" class="flex flex-col items-center gap-1 text-gray-300 hover:text-red-400 transition">
+                <div class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center"><i class="fa-solid fa-trash-can"></i></div>
+                <span class="text-[10px] font-semibold">Delete</span>
+            </button>
+        </div>
+
+        <!-- ADMIN FILE ACTION MENU (3-DOT BOTTOM SHEET) -->
+        <div id="adminFileActionMenu" class="fixed inset-0 z-[300] hidden flex-col justify-end">
+            <div id="adminFileActionOverlay" onclick="closeAdminActionMenu()" class="absolute inset-0 bg-black/60 opacity-0 transition-opacity duration-300"></div>
+            <div id="adminFileActionSheet" class="relative bg-gray-900 w-full md:max-w-md md:mx-auto md:mb-10 rounded-t-3xl md:rounded-3xl p-5 transform translate-y-full md:translate-y-10 md:scale-95 opacity-0 transition-all duration-300 shadow-2xl border border-gray-700 flex flex-col pb-10 md:pb-5 z-10">
+                <div class="flex items-center gap-4 mb-4 pb-4 border-b border-gray-800 px-2">
+                    <div id="adminActionMenuIcon" class="w-12 h-12 rounded-lg flex items-center justify-center text-2xl shrink-0"></div>
+                    <div class="overflow-hidden flex-1">
+                        <h3 id="adminActionMenuTitle" class="text-white font-semibold text-base truncate w-full">Filename</h3>
+                        <p id="adminActionMenuSize" class="text-xs text-gray-400 mt-0.5">0 MB</p>
+                    </div>
+                </div>
+                
+                <button id="adminBtnDownload" class="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-gray-800 transition">
+                    <div class="w-9 h-9 rounded-full bg-gray-800 flex items-center justify-center text-blue-400"><i class="fa-solid fa-download text-sm"></i></div>
+                    <span class="font-medium text-[15px] text-gray-200">Download</span>
+                </button>
+
+                <button id="adminBtnDelete" class="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-red-500/10 transition mt-2">
+                    <div class="w-9 h-9 rounded-full bg-red-500/10 flex items-center justify-center text-red-500"><i class="fa-solid fa-trash-can text-sm"></i></div>
+                    <span class="font-medium text-[15px] text-red-500">Delete Permanently</span>
+                </button>
+            </div>
+        </div>
+
     <script>
         // আপনার লাইভ সার্ভারের লিংকটি এখানে দিন (অবশ্যই শেষে / দিবেন না)
         const API_BASE_URL = "https://cloud-storage-ozsx.onrender.com"; 
-
-        // এখানে আপনার ফায়ারবেস UID টি বসিয়ে দিন
-        const allowedAdminsString = "oAK6oVAdUBetVRBKkbwnUKsHr8A2"; 
-        const allowedAdmins = allowedAdminsString.split(",").map(uid => uid.trim());
 
         // Firebase Configuration (Same as main site)
         const firebaseConfig = {
@@ -168,20 +526,74 @@
         const auth = firebase.auth();
         const db = firebase.database();
         let currentUser = null;
+        let allowedAdmins = []; 
 
-        // Auth Listener & Admin Check
-        auth.onAuthStateChanged((user) => {
+        async function fetchAdminConfig() {
+            try {
+                let res = await fetch(API_BASE_URL + "/get-admin-config");
+                let data = await res.json();
+                allowedAdmins = data.admin_uids.split(",").map(uid => uid.trim());
+            } catch (e) {
+                console.log("Server verification failed.");
+            }
+        }
+
+        // Auth Listener & Admin Check (With Auto-Restore & Splash Fix)
+        auth.onAuthStateChanged(async (user) => {
+            if (user && allowedAdmins.length === 0) {
+                await fetchAdminConfig(); // ব্যাকএন্ড থেকে এডমিন UID চেক করছে
+            }
+            // Hide Splash Screen once Firebase check is complete
+            let splash = document.getElementById('adminSplashScreen');
+            if(splash) {
+                splash.classList.add('opacity-0');
+                setTimeout(() => splash.classList.add('hidden'), 300);
+            }
+
             if (user) {
-                if (allowedAdmins.includes(user.uid) || allowedAdminsString === "YOUR_ADMIN_UID_HERE") {
-                    // Valid Admin
+                if (allowedAdmins.includes(user.uid)) {
                     currentUser = user;
                     document.getElementById('authSection').classList.add('hidden');
                     document.getElementById('appSection').classList.remove('hidden');
                     document.getElementById('appSection').classList.add('flex');
-                    fetchAllData(); // Load Admin Data
+                    
+                    fetchAllData(); 
+
+                    // Restore Last Active Tab & Drive State on Refresh
+                    let lastTab = localStorage.getItem('adminLastTab') || 'dashboard';
+                    
+                    history.replaceState({ view: 'tab', tabName: lastTab }, "", "#" + lastTab);
+
+                    if (lastTab === 'allFiles') {
+                        let savedUid = sessionStorage.getItem('adminDriveUid');
+                        let savedEmail = sessionStorage.getItem('adminDriveEmail');
+                        if (savedUid && savedEmail) {
+                            adminCurrentUserId = savedUid;
+                            adminCurrentFolderId = sessionStorage.getItem('adminFolderId') || 'root';
+                            adminCurrentFolderName = sessionStorage.getItem('adminFolderName') || 'Root';
+                            
+                            let headerEmail = document.getElementById('adminDriveUserEmail');
+                            if(headerEmail) {
+                                let shortEmail = savedEmail.split('@')[0];
+                                headerEmail.innerHTML = `<i class="fa-solid fa-hard-drive mr-2"></i> ${shortEmail}'s Drive`;
+                            }
+                            
+                            if (adminCurrentFolderId !== 'root') {
+                                history.pushState({ view: 'folder', folderId: adminCurrentFolderId, folderName: adminCurrentFolderName }, "", "#folder-" + adminCurrentFolderId);
+                            }
+                            
+                            showTab('allFiles', false);
+                            updateAdminBreadcrumbs();
+                        } else {
+                            history.replaceState({ view: 'tab', tabName: 'users' }, "", "#users");
+                            showTab('users', false);
+                        }
+                    } else {
+                        showTab(lastTab, false);
+                    }
                 } else {
-                    // Not an admin
                     auth.signOut();
+                    document.getElementById('authSection').classList.remove('hidden');
                     document.getElementById('authError').innerText = "Access Denied: You are not an admin.";
                 }
             } else {
@@ -193,96 +605,589 @@
         });
 
         function login() {
-            let email = document.getElementById('email').value;
-            let pass = document.getElementById('password').value;
+            let email = document.getElementById('email').value.trim();
+            let pass = document.getElementById('password').value.trim();
+            if(!email || !pass) return;
+
             document.getElementById('authError').innerText = "Checking credentials...";
-            auth.signInWithEmailAndPassword(email, pass).catch(err => {
+            
+            auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+            .then(() => {
+                return auth.signInWithEmailAndPassword(email, pass);
+            })
+            .catch(err => {
                 document.getElementById('authError').innerText = err.message;
             });
         }
 
-        function logout() { auth.signOut(); }
-
-        // Tab Navigation Logic
-        function showTab(tabId) {
-            // Hide all tabs
-            ['dashboard', 'allFiles', 'settings'].forEach(id => {
-                document.getElementById(id + 'Tab').classList.add('hidden');
-                // Remove active class from desktop sidebar
-                document.getElementById('sidebar-' + id).classList.remove('active');
-                // Remove active class from mobile nav
-                document.getElementById('nav-' + id).classList.remove('active', 'text-blue-400');
-            });
-
-            // Show selected tab
-            document.getElementById(tabId + 'Tab').classList.remove('hidden');
-            document.getElementById('sidebar-' + tabId).classList.add('active');
-            document.getElementById('nav-' + tabId).classList.add('active', 'text-blue-400');
+        function logout() { 
+            auth.signOut(); 
+            localStorage.removeItem('adminLastTab');
+            sessionStorage.clear();
         }
 
-        // Fetch All Users & Files Data
+        // --- SMART STATE VARIABLES ---
+        let origLimitVal = 25, origLimitUnit = 'GB';
+        let origMaxFileVal = 500, origMaxFileUnit = 'MB';
+
+        // --- GLOBAL STORAGE LIMIT LOGIC ---
+        db.ref('system_settings/global_storage_limit').on('value', snap => {
+            if(snap.exists()) {
+                let bytes = snap.val();
+                let isGB = bytes >= (1024 * 1024 * 1024);
+                origLimitVal = isGB ? (bytes / (1024 * 1024 * 1024)) : (bytes / (1024 * 1024));
+                origLimitUnit = isGB ? 'GB' : 'MB';
+            } else {
+                origLimitVal = 25; origLimitUnit = 'GB';
+            }
+            
+            let limitInput = document.getElementById('adminStorageLimitVal');
+            let unitInput = document.getElementById('adminStorageLimitUnit');
+            
+            if (limitInput && unitInput) {
+                limitInput.value = origLimitVal;
+                unitInput.value = origLimitUnit;
+                markUnsaved('btnSaveLimit'); // Auto-reset button state
+            }
+        });
+
+        function saveGlobalStorageLimit() {
+            let val = parseFloat(document.getElementById('adminStorageLimitVal').value);
+            let unit = document.getElementById('adminStorageLimitUnit').value;
+            
+            if (!val || val <= 0) { alert("Please enter a valid number!"); return; }
+            
+            let btn = document.getElementById('btnSaveLimit');
+            
+            // লোডিং স্টেট
+            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Saving...`;
+            btn.classList.add('opacity-80', 'pointer-events-none');
+
+            let bytes = unit === 'GB' ? val * 1024 * 1024 * 1024 : val * 1024 * 1024;
+            
+            db.ref('system_settings/global_storage_limit').set(bytes).then(() => {
+                // সাকসেস স্টেট (সবুজ)
+                btn.className = "bg-green-500 text-white px-5 py-1.5 rounded-lg font-bold text-sm transition-all duration-300 w-24 flex items-center justify-center gap-1.5 pointer-events-none shadow-lg shadow-green-500/20";
+                btn.innerHTML = `<i class="fa-solid fa-check-double"></i> Done`;
+                
+                // ২ সেকেন্ড পর ডিফল্ট নিউট্রাল স্টেটে ফিরে যাওয়া
+                setTimeout(() => { 
+                    btn.className = "bg-gray-700 text-gray-400 px-5 py-1.5 rounded-lg font-bold text-sm transition-all duration-300 w-24 flex items-center justify-center gap-1.5 pointer-events-none";
+                    btn.innerHTML = `<i class="fa-solid fa-check"></i> Saved`;
+                }, 2000);
+            }).catch(e => {
+                alert("Error saving limit!");
+                markUnsaved('btnSaveLimit');
+            });
+        }
+
+        // --- MAX UPLOAD FILE SIZE LOGIC ---
+        db.ref('system_settings/max_file_size').on('value', snap => {
+            if(snap.exists()) {
+                let bytes = snap.val();
+                let isGB = bytes >= (1024 * 1024 * 1024);
+                origMaxFileVal = isGB ? (bytes / (1024 * 1024 * 1024)) : (bytes / (1024 * 1024));
+                origMaxFileUnit = isGB ? 'GB' : 'MB';
+            } else {
+                origMaxFileVal = 500; origMaxFileUnit = 'MB';
+            }
+            
+            let limitInput = document.getElementById('adminMaxFileSizeVal');
+            let unitInput = document.getElementById('adminMaxFileSizeUnit');
+            
+            if (limitInput && unitInput) {
+                limitInput.value = origMaxFileVal;
+                unitInput.value = origMaxFileUnit;
+                markUnsaved('btnSaveMaxFile'); // Auto-reset button state
+            }
+        });
+
+        // --- BUTTON UX STATE HANDLER (SMART LOGIC) ---
+        function markUnsaved(btnId) {
+            let btn = document.getElementById(btnId);
+            if (!btn) return;
+
+            let isChanged = false;
+
+            // চেক করা হচ্ছে কোন বাটনটি কল হয়েছে এবং তার বর্তমান ভ্যালু অরিজিনাল ডেটাবেস ভ্যালুর সাথে মেলে কিনা
+            if (btnId === 'btnSaveLimit') {
+                let currentVal = parseFloat(document.getElementById('adminStorageLimitVal').value) || 0;
+                let currentUnit = document.getElementById('adminStorageLimitUnit').value;
+                if (currentVal !== origLimitVal || currentUnit !== origLimitUnit) isChanged = true;
+            } 
+            else if (btnId === 'btnSaveMaxFile') {
+                let currentVal = parseFloat(document.getElementById('adminMaxFileSizeVal').value) || 0;
+                let currentUnit = document.getElementById('adminMaxFileSizeUnit').value;
+                if (currentVal !== origMaxFileVal || currentUnit !== origMaxFileUnit) isChanged = true;
+            }
+
+            if (isChanged) {
+                // আনসেভড স্টেট (নীল, ক্লিকেবল, আগের সাইজ w-24 ঠিক রাখা হয়েছে যাতে UI না ভাঙে)
+                btn.innerHTML = `Save`;
+                btn.className = "bg-blue-600 hover:bg-blue-500 text-white px-5 py-1.5 rounded-lg font-bold text-sm transition-all duration-300 w-24 shadow-lg shadow-blue-500/20 active:scale-95 flex items-center justify-center cursor-pointer pointer-events-auto";
+            } else {
+                // সেভড স্টেট (ধূসর, আনক্লিকেবল, অরিজিনাল ভ্যালুর সাথে মিলে গেলে অটোমেটিক এই স্টেটে আসবে)
+                btn.innerHTML = `<i class="fa-solid fa-check"></i> Saved`;
+                btn.className = "bg-gray-700 text-gray-400 px-5 py-1.5 rounded-lg font-bold text-sm transition-all duration-300 w-24 flex items-center justify-center gap-1.5 pointer-events-none";
+            }
+        }
+
+        function saveMaxFileSize() {
+            let val = parseFloat(document.getElementById('adminMaxFileSizeVal').value);
+            let unit = document.getElementById('adminMaxFileSizeUnit').value;
+            
+            if (!val || val <= 0) { alert("Please enter a valid number!"); return; }
+            
+            let btn = document.getElementById('btnSaveMaxFile');
+            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Saving...`;
+            btn.classList.add('opacity-80', 'pointer-events-none');
+
+            let bytes = unit === 'GB' ? val * 1024 * 1024 * 1024 : val * 1024 * 1024;
+            
+            db.ref('system_settings/max_file_size').set(bytes).then(() => {
+                btn.className = "bg-green-500 text-white px-5 py-1.5 rounded-lg font-bold text-sm transition-all duration-300 w-24 flex items-center justify-center gap-1.5 pointer-events-none shadow-lg shadow-green-500/20";
+                btn.innerHTML = `<i class="fa-solid fa-check-double"></i> Done`;
+                setTimeout(() => { 
+                    btn.className = "bg-gray-700 text-gray-400 px-5 py-1.5 rounded-lg font-bold text-sm transition-all duration-300 w-24 flex items-center justify-center gap-1.5 pointer-events-none";
+                    btn.innerHTML = `<i class="fa-solid fa-check"></i> Saved`;
+                }, 2000);
+            }).catch(e => {
+                alert("Error saving file size limit!");
+                markUnsaved('btnSaveMaxFile');
+            });
+        }
+
+        // --- MAINTENANCE MODE LOGIC (Graceful Shutdown) ---
+        let adminMaintenanceTimer = null;
+        let adminGracefulTimer = null;
+
+        db.ref('system_settings/maintenance_mode').on('value', snap => {
+            let data = snap.val() || { status: 'inactive', lock_time: 0, end_time: 0 };
+            
+            let toggleBtn = document.getElementById('maintenanceToggle');
+            let controlsDiv = document.getElementById('maintenanceTimerControls');
+            let badge = document.getElementById('maintenanceStatusBadge');
+            let card = document.getElementById('adminMaintenanceCard');
+            let dateTimeInput = document.getElementById('maintenanceEndDateTime');
+            
+            // Toggle Update
+            if (toggleBtn) toggleBtn.checked = (data.status !== 'inactive');
+
+            // Auto-fill the date-time box from database so it survives refresh
+            // LOGICAL FIX: Do not overwrite if the admin is actively clicking/typing inside the box!
+            if (dateTimeInput && document.activeElement !== dateTimeInput) {
+                if (data.status !== 'inactive' && data.end_time > 0) {
+                    let d = new Date(data.end_time);
+                    let localISO = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+                    dateTimeInput.value = localISO;
+                } else {
+                    dateTimeInput.value = ''; // Clear if maintenance is turned off
+                }
+            }
+
+            clearInterval(adminMaintenanceTimer);
+            clearInterval(adminGracefulTimer);
+            let textElem = document.getElementById('maintenanceActiveText');
+
+            if (data.status === 'preparing') {
+                controlsDiv.classList.remove('hidden');
+                badge.innerText = "PROCESSING (30s)";
+                badge.className = "bg-orange-500/20 text-orange-400 text-[9px] font-bold px-2 py-1 rounded tracking-widest uppercase shadow-sm border border-orange-500/30 animate-pulse";
+                card.classList.add('border-orange-500/50', 'shadow-[0_0_15px_rgba(249,115,22,0.2)]');
+                
+                // Admin Side 30s Graceful Shutdown Auto-Trigger
+                adminGracefulTimer = setInterval(() => {
+                    let diff = data.lock_time - Date.now();
+                    if (diff <= 0) {
+                        clearInterval(adminGracefulTimer);
+                        // 30s Over -> Force Lock Everyone
+                        db.ref('system_settings/maintenance_mode/status').set('active');
+                    } else {
+                        textElem.innerHTML = `Waiting for users to finish tasks... Locking in: <span class="text-orange-400 font-bold ml-1">${Math.ceil(diff/1000)}s</span>`;
+                    }
+                }, 1000);
+
+            } else if (data.status === 'active') {
+                controlsDiv.classList.remove('hidden');
+                badge.innerText = "ACTIVE (LOCKED)";
+                badge.className = "bg-purple-500/20 text-purple-400 text-[9px] font-bold px-2 py-1 rounded tracking-widest uppercase shadow-sm border border-purple-500/30 animate-pulse";
+                card.classList.remove('border-orange-500/50', 'shadow-[0_0_15px_rgba(249,115,22,0.2)]');
+                card.classList.add('border-purple-500/50', 'shadow-[0_0_15px_rgba(168,85,247,0.2)]');
+                
+                // Normal Timer Display
+                adminMaintenanceTimer = setInterval(() => {
+                    let diff = data.end_time - Date.now();
+                    if (diff <= 0) {
+                        textElem.innerHTML = `⚠️ Time is up! System is still locked. <button onclick="toggleMaintenanceMode(false)" class="text-purple-400 underline ml-1">Turn Off</button> or extend target time.`;
+                    } else {
+                        // LOGICAL FIX: Removed "% 24" so hours don't reset to 0 if time is more than 1 day!
+                        let h = Math.floor(diff / (1000 * 60 * 60)); 
+                        let m = Math.floor((diff / 1000 / 60) % 60);
+                        let s = Math.floor((diff / 1000) % 60);
+                        textElem.innerHTML = `System will unlock in: <span class="text-white font-mono font-bold ml-1">${h}h ${m}m ${s}s</span>`;
+                    }
+                }, 1000);
+
+            } else {
+                controlsDiv.classList.add('hidden');
+                badge.innerText = "OFFLINE";
+                badge.className = "bg-gray-700 text-gray-300 text-[9px] font-bold px-2 py-1 rounded tracking-widest uppercase shadow-inner";
+                card.classList.remove('border-purple-500/50', 'border-orange-500/50', 'shadow-[0_0_15px_rgba(168,85,247,0.2)]', 'shadow-[0_0_15px_rgba(249,115,22,0.2)]');
+                textElem.innerText = '';
+            }
+        });
+
+        // --- SERVER CORE CONFIG LOGIC ---
+        db.ref('system_settings/telegram_config').on('value', snap => {
+            if(snap.exists()) {
+                let data = snap.val();
+                document.getElementById('adminApiId').value = data.api_id || '';
+                document.getElementById('adminApiHash').value = data.api_hash || '';
+                document.getElementById('adminSessions').value = data.sessions || '';
+                document.getElementById('adminChannels').value = data.channels || '';
+            }
+        });
+
+        function saveServerCoreConfig() {
+            let apiId = document.getElementById('adminApiId').value.trim();
+            let apiHash = document.getElementById('adminApiHash').value.trim();
+            let sessions = document.getElementById('adminSessions').value.trim();
+            let channels = document.getElementById('adminChannels').value.trim();
+
+            if(!apiId || !apiHash || !sessions || !channels) { alert("Please fill all core fields!"); return; }
+
+            let btn = document.getElementById('btnSaveCore');
+            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Saving...`;
+            
+            db.ref('system_settings/telegram_config').set({
+                api_id: apiId,
+                api_hash: apiHash,
+                sessions: sessions,
+                channels: channels
+            }).then(() => {
+                btn.className = "w-full bg-green-500 text-white font-bold py-2.5 rounded-xl transition shadow-md pointer-events-none";
+                btn.innerHTML = `<i class="fa-solid fa-check-double"></i> Saved Successfully`;
+                setTimeout(() => {
+                    btn.className = "w-full bg-gray-700 hover:bg-blue-600 active:scale-95 text-white font-bold py-2.5 rounded-xl transition shadow-md";
+                    btn.innerHTML = `Save Configurations`;
+                }, 2000);
+            }).catch(e => alert("Error saving config: " + e.message));
+        }
+
+        async function reloadTelegramCluster() {
+            let btn = document.getElementById('btnReloadCluster');
+            let origHtml = btn.innerHTML;
+            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Restarting...`;
+            btn.disabled = true;
+
+            try {
+                let token = await currentUser.getIdToken();
+                let res = await fetch(`${API_BASE_URL}/reload-telegram-cluster`, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                let data = await res.json();
+                if(res.ok) {
+                    btn.classList.replace('bg-blue-600', 'bg-green-500');
+                    btn.innerHTML = `<i class="fa-solid fa-check"></i> Live`;
+                } else {
+                    alert("Error: " + data.error);
+                }
+            } catch(e) {
+                alert("Network error.");
+            } finally {
+                setTimeout(() => {
+                    btn.classList.replace('bg-green-500', 'bg-blue-600');
+                    btn.innerHTML = origHtml;
+                    btn.disabled = false;
+                }, 2000);
+            }
+        }
+
+        function toggleMaintenanceMode(isActive) {
+            if (isActive) {
+                // ফেজ ১: Preparing. ৩০ সেকেন্ড সময় দেওয়া হচ্ছে.
+                let lockTime = Date.now() + 30000; 
+                let endTime = Date.now() + (60 * 60 * 1000); // 1 hour default
+                db.ref('system_settings/maintenance_mode').set({ 
+                    status: 'preparing', 
+                    lock_time: lockTime,
+                    end_time: endTime 
+                });
+            } else {
+                if(!confirm("Are you sure you want to turn off Maintenance Mode? Users will regain access.")) {
+                    document.getElementById('maintenanceToggle').checked = true;
+                    return;
+                }
+                db.ref('system_settings/maintenance_mode').set({ status: 'inactive', lock_time: 0, end_time: 0 });
+            }
+        }
+
+        function updateMaintenanceTime() {
+            let dateTimeVal = document.getElementById('maintenanceEndDateTime').value;
+            
+            if (!dateTimeVal) { 
+                alert("Please select a specific date and time!"); 
+                return; 
+            }
+            
+            let targetTimeMs = new Date(dateTimeVal).getTime();
+            
+            if (targetTimeMs <= Date.now()) {
+                alert("⚠️ Error: You cannot set a time in the past!");
+                return;
+            }
+            
+            // Safely grab the button
+            let btn = document.querySelector('#maintenanceTimerControls button');
+            let originalHtml = btn ? btn.innerHTML : "Set Target";
+            if (btn) {
+                btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Saving...`;
+                btn.disabled = true;
+            }
+
+            db.ref('system_settings/maintenance_mode/end_time').set(targetTimeMs).then(() => {
+                if (btn) {
+                    btn.className = "w-full md:w-auto bg-green-500 text-white px-5 py-2 rounded-lg font-bold text-sm transition shadow-lg shadow-green-500/20 flex items-center justify-center gap-2 shrink-0";
+                    btn.innerHTML = `<i class="fa-solid fa-check-double"></i> Target Set`;
+                    setTimeout(() => {
+                        btn.className = "w-full md:w-auto bg-purple-600 hover:bg-purple-500 active:scale-95 text-white px-5 py-2 rounded-lg font-bold text-sm transition shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2 shrink-0";
+                        btn.innerHTML = originalHtml;
+                        btn.disabled = false;
+                    }, 2000);
+                }
+            }).catch(e => {
+                alert("Error setting time: " + e.message);
+                if (btn) {
+                    btn.innerHTML = originalHtml;
+                    btn.disabled = false;
+                }
+            });
+        }
+
+        let adminIgnoreNextPopState = false;
+
+        // Back Button (Hardware/Browser) Handling Logic
+        window.addEventListener('popstate', (event) => {
+            if (adminIgnoreNextPopState) {
+                adminIgnoreNextPopState = false;
+                return;
+            }
+
+            const state = event.state;
+
+            // Close Action Menu (3-dot) if open
+            let actionMenu = document.getElementById('adminFileActionMenu');
+            if (actionMenu && !actionMenu.classList.contains('hidden') && (!state || state.modal !== 'adminActionMenu')) {
+                closeAdminActionMenu(true);
+            }
+
+            // Close Selection Mode if active
+            if (adminSelectionMode && (!state || state.modal !== 'adminSelectionMode')) {
+                closeAdminSelectionMode(true);
+            }
+
+            // Close User Action Modal if open
+            let userModal = document.getElementById('userActionModal');
+            if (userModal && !userModal.classList.contains('hidden') && (!state || state.modal !== 'userModal')) {
+                closeUserModal(true);
+            }
+
+            // Handle Tab and Folder Navigation
+            if (state) {
+                if (state.view === 'tab') {
+                    showTab(state.tabName, false);
+                } else if (state.view === 'folder') {
+                    adminCurrentFolderId = state.folderId;
+                    adminCurrentFolderName = state.folderName;
+                    sessionStorage.setItem('adminFolderId', adminCurrentFolderId);
+                    sessionStorage.setItem('adminFolderName', adminCurrentFolderName);
+                    updateAdminBreadcrumbs();
+                    renderAdminExplorer();
+                }
+            }
+        });
+
+        // Tab Navigation Logic
+        function showTab(tabId, addToHistory = true) {
+            localStorage.setItem('adminLastTab', tabId);
+            
+            if (addToHistory) {
+                history.pushState({ view: 'tab', tabName: tabId }, "", "#" + tabId);
+            }
+
+            ['dashboard', 'users', 'allFiles', 'settings'].forEach(id => {
+                let tabEl = document.getElementById(id + 'Tab');
+                if(tabEl) tabEl.classList.add('hidden');
+                
+                let sideBtn = document.getElementById('sidebar-' + id);
+                if(sideBtn) sideBtn.classList.remove('active');
+                
+                let navBtn = document.getElementById('nav-' + id);
+                if(navBtn) navBtn.classList.remove('active', 'text-blue-400');
+            });
+
+            let selTab = document.getElementById(tabId + 'Tab');
+            if(selTab) selTab.classList.remove('hidden');
+            
+            let selSide = document.getElementById('sidebar-' + tabId);
+            if(selSide) selSide.classList.add('active');
+            
+            let selNav = document.getElementById('nav-' + tabId);
+            if(selNav) selNav.classList.add('active', 'text-blue-400');
+            
+            window.scrollTo(0,0);
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024, sizes =['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        let globalAllFiles = []; 
+        let globalAllFolders = []; 
+        let globalAllUsers = []; 
+        
         function fetchAllData() {
             db.ref('users').on('value', (snapshot) => {
                 let totalUsers = 0;
                 let totalFiles = 0;
                 let allFilesArray = [];
+                let allFoldersArray = [];
+                let allUsersArray = [];
 
                 if (snapshot.exists()) {
                     snapshot.forEach(userSnap => {
-                        totalUsers++;
                         let uid = userSnap.key;
                         let filesSnap = userSnap.child('files');
+                        let infoSnap = userSnap.child('account_info');
+                        
+                        // যেহেতু Render Backend এখন Atomic Deletion করছে, তাই কোনো Ghost Account তৈরি হবে না।
+                        // অতিরিক্ত নিরাপত্তার জন্য শুধু ইমেইল চেক করা হচ্ছে।
+                        if (!infoSnap.exists() || !infoSnap.val().email) return;
+                        
+                        let accData = infoSnap.val();
+                        let userName = accData.name || "Unknown User";
+                        let userEmail = accData.email;
+                        let userStatus = accData.status || "active"; 
+
+                        totalUsers++; // শুধুমাত্র অ্যাক্টিভ/ব্যানড ইউজারদের কাউন্ট করবো
+
+                        let userTotalFiles = 0;
+                        let userTotalStorage = 0;
                         
                         if (filesSnap.exists()) {
                             filesSnap.forEach(fileSnap => {
                                 totalFiles++;
+                                userTotalFiles++;
+                                userTotalStorage += fileSnap.val().file_size || 0;
+                                
+                                let fData = fileSnap.val();
+                                if(!fData.folder_id) fData.folder_id = 'root';
+                                
                                 allFilesArray.push({
                                     uid: uid,
+                                    userEmail: userEmail,
                                     dbKey: fileSnap.key,
-                                    ...fileSnap.val()
+                                    ...fData
                                 });
                             });
                         }
+
+                        let foldersSnap = userSnap.child('folders');
+                        if (foldersSnap.exists()) {
+                            foldersSnap.forEach(folderSnap => {
+                                allFoldersArray.push({
+                                    uid: uid,
+                                    key: folderSnap.key,
+                                    ...folderSnap.val()
+                                });
+                            });
+                        }
+
+                        allUsersArray.push({
+                            uid: uid,
+                            name: userName,
+                            email: userEmail,
+                            status: userStatus,
+                            totalFiles: userTotalFiles,
+                            totalStorage: userTotalStorage,
+                            profile_pic: infoSnap.exists() && infoSnap.val().profile_pic ? infoSnap.val().profile_pic : null,
+                            created_at: infoSnap.exists() && infoSnap.val().created_at ? infoSnap.val().created_at : 0,
+                            last_active: infoSnap.exists() && infoSnap.val().last_active ? infoSnap.val().last_active : 0,
+                            is_online: infoSnap.exists() && infoSnap.val().is_online ? infoSnap.val().is_online : false
+                        });
                     });
                 }
 
-                // Update Dashboard Stats
+                globalAllFiles = allFilesArray;
+                globalAllFolders = allFoldersArray;
+                globalAllUsers = allUsersArray; 
+
                 document.getElementById('totalUsersCount').innerText = totalUsers;
                 document.getElementById('totalFilesCount').innerText = totalFiles;
 
-                // Sort files by newest
                 allFilesArray.sort((a, b) => b.timestamp - a.timestamp);
-                renderFilesTable(allFilesArray);
+                searchAndFilterUsers(); // রেন্ডার করার জন্য ডিরেক্ট ফাংশনের বদলে মাস্টার ফিল্টার ফাংশন কল করা হলো
+                
+                if (adminCurrentUserId && !document.getElementById('allFilesTab').classList.contains('hidden')) {
+                    renderAdminExplorer();
+                }
             });
         }
 
-        // Render Table in 'All Files' Tab
-        function renderFilesTable(files) {
-            let tbody = document.getElementById('allFilesList');
+        // --- USER MANAGEMENT LOGIC ---
+        function renderUsersTable(users) {
+            let tbody = document.getElementById('allUsersList');
+            if(!tbody) return;
             tbody.innerHTML = '';
 
-            if (files.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-400">No files uploaded yet.</td></tr>';
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-400">No users found.</td></tr>';
                 return;
             }
 
-            files.forEach(f => {
-                let sizeMB = (f.file_size / (1024 * 1024)).toFixed(2);
-                let shortUid = f.uid.substring(0, 8) + '...';
-                let shortName = f.file_name.length > 25 ? f.file_name.substring(0, 25) + '...' : f.file_name;
+            users.forEach(u => {
+                let isBanned = u.status === 'banned';
+                let statusBadge = isBanned 
+                    ? `<span class="bg-red-500/20 text-red-500 px-2 py-1 rounded text-xs font-bold">Banned</span>` 
+                    : `<span class="bg-green-500/20 text-green-500 px-2 py-1 rounded text-xs font-bold">Active</span>`;
+                
+                let storageClass = u.totalStorage > (20 * 1024 * 1024 * 1024) ? "text-red-400 font-bold" : "text-gray-400";
+                
+                // সত্যিকারের অনলাইন চেকিং (২ মিনিটের গ্রেস পিরিয়ড)
+                let isActuallyOnline = u.is_online && (Date.now() - u.last_active < 120000);
+                
+                // অনলাইনে থাকলে ব্লিংকিং সবুজ বর্ডার, অফলাইনে থাকলে সাধারণ বর্ডার
+                let onlineIndicatorClass = isActuallyOnline ? `border-2 border-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]` : `border-2 border-gray-600`;
+
+                // প্রোফাইল ছবি না থাকলে ডিফল্ট আইকন
+                let avatarHtml = u.profile_pic 
+                    ? `<img src="${u.profile_pic}" class="w-10 h-10 rounded-full object-cover ${onlineIndicatorClass}">` 
+                    : `<div class="w-10 h-10 rounded-full bg-gray-700 text-gray-400 flex items-center justify-center text-lg ${onlineIndicatorClass}"><i class="fa-solid fa-user"></i></div>`;
 
                 let tr = document.createElement('tr');
                 tr.className = "hover:bg-gray-800/50 transition border-b border-gray-700/50";
                 tr.innerHTML = `
-                    <td class="p-4 text-xs font-mono text-gray-400" title="${f.uid}">${shortUid}</td>
-                    <td class="p-4 font-semibold text-blue-300" title="${f.file_name}">${shortName}</td>
-                    <td class="p-4 text-gray-400 text-sm">${sizeMB} MB</td>
+                    <td class="p-4 flex items-center gap-3">
+                        <div class="relative shrink-0">
+                            ${avatarHtml}
+                            ${isActuallyOnline ? `<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-500 border border-gray-900 animate-pulse"></span>` : ''}
+                        </div>
+                        <div class="leading-tight overflow-hidden">
+                            <span class="font-bold text-white text-sm truncate w-full block">${u.name}</span>
+                            <span class="font-semibold text-blue-400 text-[11px] truncate w-full block">${u.email}</span>
+                            <span class="text-[9px] text-gray-500 font-mono truncate w-full block">${u.uid}</span>
+                        </div>
+                    </td>
+                    <td class="p-4">${statusBadge}</td>
+                    <td class="p-4 text-gray-400 text-sm">${u.totalFiles}</td>
+                    <td class="p-4 ${storageClass} text-sm">${formatBytes(u.totalStorage)}</td>
                     <td class="p-4 text-center">
-                        <a href="${API_BASE_URL}/download/${f.message_id}" target="_blank" class="text-green-500 hover:text-green-400 mr-4 transition" title="Download">
-                            <i class="fa-solid fa-download"></i>
-                        </a>
-                        <button onclick="deleteAnyFile('${f.uid}', '${f.dbKey}', ${f.message_id})" class="text-red-500 hover:text-red-400 transition" title="Delete">
-                            <i class="fa-solid fa-trash"></i>
+                        <button onclick="openUserModal('${u.uid}')" class="w-8 h-8 bg-gray-800 border border-gray-600 rounded-full text-gray-400 hover:text-white hover:bg-gray-700 transition flex items-center justify-center mx-auto shadow-sm">
+                            <i class="fa-solid fa-ellipsis-vertical"></i>
                         </button>
                     </td>
                 `;
@@ -290,23 +1195,833 @@
             });
         }
 
-        // Admin Delete Logic (Deletes from Telegram & Firebase)
-        async function deleteAnyFile(uid, dbKey, messageId) {
-            if(!confirm("⚠️ Admin Alert: Are you sure you want to permanently delete this user's file?")) return;
+        let activeUserFilter = 'all';
+
+        function applyUserFilter(filterType, btnElement) {
+            activeUserFilter = filterType;
             
-            try {
-                // Remove from Telegram (via Backend API)
-                let response = await fetch(`${API_BASE_URL}/delete/${messageId}`, { method: 'DELETE' });
-                if(response.ok) {
-                    // Remove from Firebase Realtime DB
-                    db.ref(`users/${uid}/files/${dbKey}`).remove();
-                } else {
-                    alert("Error deleting from Telegram Server.");
+            // বাটনগুলোর ডিজাইন চেঞ্জ করা (Active / Inactive State)
+            document.querySelectorAll('.user-filter-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white', 'shadow-[0_0_15px_rgba(37,99,235,0.4)]');
+                btn.classList.add('bg-gray-800', 'text-gray-300', 'hover:bg-gray-700');
+            });
+            
+            btnElement.classList.remove('bg-gray-800', 'text-gray-300', 'hover:bg-gray-700');
+            btnElement.classList.add('bg-blue-600', 'text-white', 'shadow-[0_0_15px_rgba(37,99,235,0.4)]');
+
+            searchAndFilterUsers();
+        }
+
+        function searchAndFilterUsers() {
+            let input = document.getElementById("userSearchInput").value.toLowerCase();
+            let nowTime = Date.now();
+
+            let filteredUsers = globalAllUsers.filter(u => {
+                // ১. লাইভ সার্চ ইঞ্জিন লজিক
+                let matchText = u.email.toLowerCase().includes(input) || 
+                                u.name.toLowerCase().includes(input) || 
+                                u.uid.toLowerCase().includes(input);
+                if (!matchText) return false;
+
+                // ২. চিপ (Chip) ফিল্টারিং লজিক
+                if (activeUserFilter === 'active' && u.status !== 'active') return false;
+                if (activeUserFilter === 'frozen' && u.status !== 'banned') return false;
+                
+                if (activeUserFilter === 'new') {
+                    // গত ৭ দিনের মধ্যে একাউন্ট খোলা হয়েছে কিনা
+                    let sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+                    if (!u.created_at || (nowTime - u.created_at) > sevenDaysMs) return false;
                 }
-            } catch(e) {
-                alert("Network error while deleting file.");
+                
+                if (activeUserFilter === 'live') {
+                    // সত্যিকারের লাইভ চেকিং (Firebase Presence + Time Validation)
+                    let isActuallyOnline = u.is_online && (Date.now() - u.last_active < 120000);
+                    if (!isActuallyOnline) return false;
+                }
+
+                return true; // সব কন্ডিশন পাস করলে লিস্টে অ্যাড হবে
+            });
+
+            // ৩. ফিল্টার হওয়া নতুন লিস্টটি টেবিলে পাঠানো
+            renderUsersTable(filteredUsers);
+        }
+
+        // --- PROFESSIONAL ADMIN FILE EXPLORER LOGIC ---
+        let adminCurrentUserId = null;
+        let adminCurrentFolderId = 'root';
+        let adminCurrentFolderName = 'Root';
+
+        function openUserDrive(uid, email) {
+            adminCurrentUserId = uid;
+            adminCurrentFolderId = 'root';
+            adminCurrentFolderName = 'Root';
+            
+            // Save state for refresh
+            sessionStorage.setItem('adminDriveUid', uid);
+            sessionStorage.setItem('adminDriveEmail', email);
+            sessionStorage.setItem('adminFolderId', 'root');
+            sessionStorage.setItem('adminFolderName', 'Root');
+            
+            let headerEmail = document.getElementById('adminDriveUserEmail');
+            if(headerEmail) {
+                let shortEmail = email ? email.split('@')[0] : 'User';
+                headerEmail.innerHTML = `<i class="fa-solid fa-hard-drive mr-2"></i> ${shortEmail}'s Drive`;
+            }
+            
+            showTab('allFiles');
+            updateAdminBreadcrumbs();
+            renderAdminExplorer();
+        }
+
+        function updateAdminBreadcrumbs() {
+            let breadcrumbDiv = document.getElementById('adminBreadcrumbs');
+            if (!breadcrumbDiv) return;
+
+            if (adminCurrentFolderId === 'root') {
+                breadcrumbDiv.innerHTML = `<span class="text-white">Root</span>`;
+                document.getElementById('adminFolderBackBtn').classList.add('hidden');
+                return;
+            }
+
+            document.getElementById('adminFolderBackBtn').classList.remove('hidden');
+            
+            let path = [];
+            let currId = adminCurrentFolderId;
+            
+            while(currId !== 'root') {
+                let folderObj = globalAllFolders.find(f => f.key === currId && f.uid === adminCurrentUserId);
+                if(folderObj) {
+                    path.unshift({ id: folderObj.key, name: folderObj.folder_name });
+                    currId = folderObj.parent_id;
+                } else {
+                    break;
+                }
+            }
+
+            let html = `<span onclick="adminOpenFolder('root', 'Root')" class="text-gray-400 hover:text-white cursor-pointer transition">Root</span>`;
+            path.forEach((step, index) => {
+                html += `<i class="fa-solid fa-chevron-right text-[10px] text-gray-500 mx-1.5"></i>`;
+                if (index === path.length - 1) {
+                    html += `<span class="text-white">${step.name}</span>`;
+                } else {
+                    html += `<span onclick="adminOpenFolder('${step.id}', '${step.name.replace(/'/g, "\\'")}')" class="text-gray-400 hover:text-white cursor-pointer transition">${step.name}</span>`;
+                }
+            });
+
+            breadcrumbDiv.innerHTML = html;
+            setTimeout(() => breadcrumbDiv.scrollTo({left: breadcrumbDiv.scrollWidth, behavior: 'smooth'}), 50);
+        }
+
+        function adminOpenFolder(folderId, folderName, addToHistory = true) {
+            adminCurrentFolderId = folderId;
+            adminCurrentFolderName = folderName;
+            
+            sessionStorage.setItem('adminFolderId', folderId);
+            sessionStorage.setItem('adminFolderName', folderName);
+            
+            if (addToHistory) {
+                history.pushState({ view: 'folder', folderId: folderId, folderName: folderName }, "", "#folder-" + folderId);
+            }
+            
+            updateAdminBreadcrumbs();
+            renderAdminExplorer();
+        }
+
+        function adminGoBackFolder() {
+            history.back(); // History API will handle the actual visual backward navigation
+        }
+
+        function toggleBan(uid, isCurrentlyBanned) {
+            let newStatus = isCurrentlyBanned ? 'active' : 'banned';
+            let actionText = isCurrentlyBanned ? 'UNBAN' : 'BAN';
+            if(!confirm(`Are you sure you want to ${actionText} this user?`)) return;
+            db.ref(`users/${uid}/account_info/status`).set(newStatus);
+        }
+
+        function formatAdminDateAndTime(ts) {
+            if (!ts) return "Unknown";
+            let d = new Date(ts);
+            return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + " at " + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        }
+
+        function openUserModal(uid) {
+            let user = globalAllUsers.find(u => u.uid === uid);
+            if (!user) return;
+
+            document.getElementById('modalUserEmail').innerText = user.name;
+            document.getElementById('modalUserUid').innerText = user.email + " | " + user.uid.substring(0, 8) + "...";
+            document.getElementById('modalUserFiles').innerText = user.totalFiles;
+            document.getElementById('modalUserStorage').innerText = formatBytes(user.totalStorage);
+            
+            // Populate Join Date & Last Active Time
+            document.getElementById('modalUserJoined').innerText = formatAdminDateAndTime(user.created_at);
+            
+            // Check if actually online (Grace period: 2 minutes)
+            let isActuallyOnline = user.is_online && (Date.now() - user.last_active < 120000);
+
+            if (isActuallyOnline) {
+                document.getElementById('modalUserLastActive').innerHTML = `<span class="text-green-400 animate-pulse"><i class="fa-solid fa-circle text-[8px] mr-1 align-middle"></i>Online Now</span>`;
+            } else {
+                document.getElementById('modalUserLastActive').innerText = formatAdminDateAndTime(user.last_active);
+            }
+
+            let statusBadge = document.getElementById('modalUserStatus');
+            let isBanned = user.status === 'banned';
+            if (isBanned) {
+                statusBadge.innerText = "Banned";
+                statusBadge.className = "inline-block mt-2 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border border-red-500/30 bg-red-500/10 text-red-500";
+            } else {
+                statusBadge.innerText = "Active";
+                statusBadge.className = "inline-block mt-2 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border border-green-500/30 bg-green-500/10 text-green-500";
+            }
+
+            let actionsContainer = document.getElementById('modalActionsContainer');
+            actionsContainer.innerHTML = `
+                <button onclick="closeUserModal(); openUserDrive('${user.uid}', '${user.email}')" class="w-full flex items-center justify-between p-4 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl transition group">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center"><i class="fa-solid fa-folder-open"></i></div>
+                        <span class="font-semibold text-gray-200">View Uploaded Files</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-gray-500 group-hover:text-white transition"></i>
+                </button>
+                <button onclick="toggleBan('${user.uid}', ${isBanned}); closeUserModal()" class="w-full flex items-center justify-between p-4 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl transition group">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full ${isBanned ? 'bg-green-500/20 text-green-400' : 'bg-orange-500/20 text-orange-400'} flex items-center justify-center">
+                            <i class="fa-solid ${isBanned ? 'fa-user-check' : 'fa-user-slash'}"></i>
+                        </div>
+                        <span class="font-semibold ${isBanned ? 'text-green-400' : 'text-orange-400'}">${isBanned ? 'Restore User Access' : 'Suspend User Account'}</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-gray-500 group-hover:text-white transition"></i>
+                </button>
+            `;
+
+            let modal = document.getElementById('userActionModal');
+            let card = document.getElementById('userModalCard');
+            
+            if (!history.state || history.state.modal !== 'userModal') {
+                history.pushState({ modal: 'userModal' }, "");
+            }
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            setTimeout(() => { card.classList.remove('scale-95', 'opacity-0'); }, 10);
+        }
+
+        function closeUserModal(fromHistory = false) {
+            let modal = document.getElementById('userActionModal');
+            let card = document.getElementById('userModalCard');
+            
+            if (fromHistory !== true && history.state && history.state.modal === 'userModal') {
+                adminIgnoreNextPopState = true;
+                history.back();
+            }
+            
+            card.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        // User Delete function has been permanently removed.
+
+        let adminCurrentViewMode = 'list';
+        let adminSelectionMode = false;
+        let adminSelectedItems = []; 
+        let adminLongPressTimer;
+
+        function changeAdminViewMode(mode) {
+            adminCurrentViewMode = mode;
+            let listBtn = document.querySelector('.admin-view-btn-list');
+            let gridBtn = document.querySelector('.admin-view-btn-grid');
+            
+            if (mode === 'list') {
+                listBtn.className = "admin-view-btn-list w-8 h-8 rounded text-blue-400 bg-gray-700 shadow flex items-center justify-center transition";
+                gridBtn.className = "admin-view-btn-grid w-8 h-8 rounded text-gray-400 hover:text-white flex items-center justify-center transition";
+                document.getElementById('adminMainListContainer').className = "flex flex-col gap-3 pb-4";
+            } else {
+                gridBtn.className = "admin-view-btn-grid w-8 h-8 rounded text-blue-400 bg-gray-700 shadow flex items-center justify-center transition";
+                listBtn.className = "admin-view-btn-list w-8 h-8 rounded text-gray-400 hover:text-white flex items-center justify-center transition";
+                document.getElementById('adminMainListContainer').className = "grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 pb-4";
+            }
+            renderAdminExplorer();
+        }
+
+        function getAdminFileType(fileName) {
+            let ext = fileName.split('.').pop().toLowerCase();
+            if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic'].includes(ext)) return 'image';
+            if (['mp4', 'mkv', 'avi', 'mov'].includes(ext)) return 'video';
+            if (['mp3', 'wav', 'ogg', 'm4a'].includes(ext)) return 'audio';
+            if (['pdf', 'doc', 'docx', 'txt', 'xls', 'xlsx'].includes(ext)) return 'document';
+            return 'other';
+        }
+
+        // --- ADMIN MULTI-SELECT LOGIC ---
+        function startAdminLongPress(key, type) {
+            if(adminSelectionMode) return;
+            adminLongPressTimer = setTimeout(() => {
+                enableAdminSelectionMode(key, type);
+            }, 500);
+        }
+
+        function cancelAdminLongPress() {
+            clearTimeout(adminLongPressTimer);
+        }
+
+        function enableAdminSelectionMode(initialKey, type) {
+            adminSelectionMode = true;
+            adminSelectedItems = [{ key: initialKey, type: type }];
+            
+            if (!history.state || history.state.modal !== 'adminSelectionMode') {
+                history.pushState({ modal: 'adminSelectionMode' }, "");
+            }
+            
+            document.getElementById('adminSelectionHeader').classList.remove('-translate-y-full');
+            document.getElementById('adminSelectionBottomBar').classList.remove('translate-y-full');
+            
+            updateAdminSelectionUI();
+            renderAdminExplorer();
+        }
+
+        function closeAdminSelectionMode(fromHistory = false) {
+            adminSelectionMode = false;
+            adminSelectedItems = [];
+            
+            if (fromHistory !== true && history.state && history.state.modal === 'adminSelectionMode') {
+                adminIgnoreNextPopState = true;
+                history.back();
+            }
+            
+            document.getElementById('adminSelectionHeader').classList.add('-translate-y-full');
+            document.getElementById('adminSelectionBottomBar').classList.add('translate-y-full');
+            
+            renderAdminExplorer();
+        }
+
+        function toggleAdminSelectItem(key, type) {
+            let index = adminSelectedItems.findIndex(i => i.key === key && i.type === type);
+            if (index > -1) {
+                adminSelectedItems.splice(index, 1);
+            } else {
+                adminSelectedItems.push({ key: key, type: type });
+            }
+            
+            if (adminSelectedItems.length === 0) {
+                closeAdminSelectionMode();
+            } else {
+                updateAdminSelectionUI();
+                renderAdminExplorer();
             }
         }
-    </script>
+
+        function toggleAdminSelectAll() {
+            let currentFolders = globalAllFolders.filter(f => f.uid === adminCurrentUserId && f.parent_id === adminCurrentFolderId);
+            let currentFiles = globalAllFiles.filter(f => f.uid === adminCurrentUserId && f.folder_id === adminCurrentFolderId);
+            
+            let itemsToSelect = [];
+            currentFolders.forEach(f => itemsToSelect.push({ key: f.key, type: 'folder' }));
+            currentFiles.forEach(f => itemsToSelect.push({ key: f.dbKey, type: 'file' }));
+
+            if (adminSelectedItems.length === itemsToSelect.length && itemsToSelect.length > 0) {
+                adminSelectedItems = [];
+            } else {
+                adminSelectedItems = itemsToSelect;
+            }
+            
+            if (adminSelectedItems.length === 0) {
+                closeAdminSelectionMode();
+            } else {
+                updateAdminSelectionUI();
+                renderAdminExplorer();
+            }
+        }
+
+        function updateAdminSelectionUI() {
+            document.getElementById('adminSelectionCountText').innerText = `${adminSelectedItems.length} Selected`;
+            
+            let currentFoldersCount = globalAllFolders.filter(f => f.uid === adminCurrentUserId && f.parent_id === adminCurrentFolderId).length;
+            let currentFilesCount = globalAllFiles.filter(f => f.uid === adminCurrentUserId && f.folder_id === adminCurrentFolderId).length;
+            let totalItemsCount = currentFoldersCount + currentFilesCount;
+            
+            let selectAllBtn = document.getElementById('adminSelectAllBtn');
+            if (adminSelectedItems.length === totalItemsCount && totalItemsCount > 0) {
+                selectAllBtn.innerText = "Deselect All";
+            } else {
+                selectAllBtn.innerText = "Select All";
+            }
+        }
+
+        // --- EXPLORER RENDERER ---
+        function renderAdminExplorer() {
+            let container = document.getElementById('adminMainListContainer');
+            let emptyState = document.getElementById('adminEmptyState');
+
+            if (!container) return;
+            container.innerHTML = '';
+
+            let currentFolders = globalAllFolders.filter(f => f.uid === adminCurrentUserId && f.parent_id === adminCurrentFolderId);
+            let currentFiles = globalAllFiles.filter(f => f.uid === adminCurrentUserId && f.folder_id === adminCurrentFolderId);
+
+            if (currentFolders.length === 0 && currentFiles.length === 0) {
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
+            }
+
+            // Render Folders
+            currentFolders.forEach(folder => {
+                let childFilesCount = globalAllFiles.filter(f => f.uid === adminCurrentUserId && f.folder_id === folder.key).length;
+                let childFoldersCount = globalAllFolders.filter(f => f.uid === adminCurrentUserId && f.parent_id === folder.key).length;
+                let totalItems = childFilesCount + childFoldersCount;
+                let itemText = totalItems === 1 ? '1 Item' : `${totalItems} Items`;
+                let safeName = folder.folder_name.replace(/'/g, "\\'");
+
+                let uploadDate = folder.timestamp ? new Date(folder.timestamp).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Unknown';
+
+                let isSelected = adminSelectedItems.some(i => i.key === folder.key && i.type === 'folder');
+                let selClass = isSelected ? 'selected-card' : '';
+                let checkIcon = isSelected ? '<i class="fa-solid fa-circle-check text-blue-500 text-[20px] bg-white rounded-full flex items-center justify-center shadow-md"></i>' : '<div class="w-full h-full border-2 border-gray-500 bg-gray-800 rounded-full shadow-md"></div>';
+
+                if (adminCurrentViewMode === 'grid') {
+                    container.innerHTML += `
+                    <div oncontextmenu="event.preventDefault();" ontouchstart="startAdminLongPress('${folder.key}', 'folder')" ontouchend="cancelAdminLongPress()" onmousedown="startAdminLongPress('${folder.key}', 'folder')" onmouseup="cancelAdminLongPress()" onmouseleave="cancelAdminLongPress()" onclick="if(adminSelectionMode) { toggleAdminSelectItem('${folder.key}', 'folder'); } else { adminOpenFolder('${folder.key}', '${safeName}'); }" class="relative aspect-square bg-gray-800 rounded-xl border border-gray-700 shadow-sm group cursor-pointer active:bg-gray-700 transition flex flex-col items-center justify-center p-2 no-select ${selClass}">
+                        <div class="absolute top-2 left-2 w-5 h-5 z-20 select-checkbox ${adminSelectionMode ? 'opacity-100' : 'opacity-0'} pointer-events-none">${checkIcon}</div>
+                        <div class="absolute top-1 right-1 z-20 ${adminSelectionMode ? 'hidden' : ''}">
+                            <button onclick="event.stopPropagation(); openAdminActionMenu('${folder.key}', true)" class="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 transition">
+                                <i class="fa-solid fa-ellipsis-vertical text-sm"></i>
+                            </button>
+                        </div>
+                        <i class="fa-solid fa-folder text-4xl text-blue-400 mb-1 mt-2 pointer-events-none"></i>
+                        <p class="font-semibold text-white text-xs text-center line-clamp-1 w-full px-1 pointer-events-none" title="${folder.folder_name}">${folder.folder_name}</p>
+                        <p class="text-[9px] text-gray-400 mt-0.5 pointer-events-none">${itemText}</p>
+                    </div>`;
+                } else {
+                    container.innerHTML += `
+                    <div oncontextmenu="event.preventDefault();" ontouchstart="startAdminLongPress('${folder.key}', 'folder')" ontouchend="cancelAdminLongPress()" onmousedown="startAdminLongPress('${folder.key}', 'folder')" onmouseup="cancelAdminLongPress()" onmouseleave="cancelAdminLongPress()" onclick="if(adminSelectionMode) { toggleAdminSelectItem('${folder.key}', 'folder'); } else { adminOpenFolder('${folder.key}', '${safeName}'); }" class="bg-gray-800 p-3 rounded-2xl border border-gray-700 flex justify-between items-center shadow-sm cursor-pointer hover:bg-gray-700 transition no-select ${selClass}">
+                        <div class="flex items-center overflow-hidden flex-1 mr-3 pointer-events-none">
+                            <div class="${adminSelectionMode ? 'block' : 'hidden'} w-6 h-6 mr-3 flex-shrink-0 z-20 select-checkbox pointer-events-none">${checkIcon}</div>
+                            <div class="w-12 h-12 bg-blue-500/10 text-blue-400 rounded-xl flex items-center justify-center mr-3 flex-shrink-0 relative">
+                                <i class="fa-solid fa-folder text-2xl"></i>
+                            </div>
+                            <div class="overflow-hidden">
+                                <p class="font-semibold text-white text-sm truncate w-full" title="${folder.folder_name}">${folder.folder_name}</p>
+                                <p class="text-[11px] text-gray-400 mt-0.5">${itemText} <span class="mx-1">•</span> ${uploadDate}</p>
+                            </div>
+                        </div>
+                        <div class="relative flex-shrink-0 z-20 ${adminSelectionMode ? 'hidden' : ''}">
+                            <button onclick="event.stopPropagation(); openAdminActionMenu('${folder.key}', true)" class="w-10 h-10 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-700 hover:text-white transition">
+                                <i class="fa-solid fa-ellipsis-vertical text-lg"></i>
+                            </button>
+                        </div>
+                    </div>`;
+                }
+            });
+
+            // Render Files
+            currentFiles.forEach(file => {
+                let type = getAdminFileType(file.file_name);
+                let iconClass = "fa-file"; let colorClass = "text-blue-500 bg-blue-500/10";
+                
+                if(type === 'image') { iconClass = "fa-image"; colorClass = "text-red-500 bg-red-500/10"; }
+                else if(type === 'video') { iconClass = "fa-play"; colorClass = "text-blue-500 bg-blue-500/10"; }
+                else if(type === 'audio') { iconClass = "fa-music"; colorClass = "text-purple-500 bg-purple-500/10"; }
+                else if(type === 'document') { iconClass = "fa-file-lines"; colorClass = "text-teal-500 bg-teal-500/10"; }
+                else { iconClass = "fa-file-zipper"; colorClass = "text-green-500 bg-green-500/10"; }
+
+                let iconHtml = `<i class="fa-solid ${iconClass} text-xl pointer-events-none"></i>`;
+                let gridIconHtml = `<div class="w-full h-full flex items-center justify-center ${colorClass} pointer-events-none"><i class="fa-solid ${iconClass} text-3xl"></i></div>`;
+                
+                if (file.thumbnail) {
+                    iconHtml = `<img src="${file.thumbnail}" class="w-full h-full object-cover rounded-xl shadow-sm border border-gray-600 pointer-events-none">`;
+                    gridIconHtml = `<img src="${file.thumbnail}" class="w-full h-full object-cover opacity-80 pointer-events-none">`;
+                    colorClass = "bg-transparent"; 
+                }
+                
+                let uploadDate = file.timestamp ? new Date(file.timestamp).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Unknown';
+
+                let isSelected = adminSelectedItems.some(i => i.key === file.dbKey && i.type === 'file');
+                let selClass = isSelected ? 'selected-card' : '';
+                let checkIcon = isSelected ? '<i class="fa-solid fa-circle-check text-blue-500 text-[20px] bg-white rounded-full flex items-center justify-center shadow-md"></i>' : '<div class="w-full h-full border-2 border-gray-500 bg-gray-800 rounded-full shadow-md"></div>';
+
+                if (adminCurrentViewMode === 'grid') {
+                    container.innerHTML += `
+                    <div oncontextmenu="event.preventDefault();" ontouchstart="startAdminLongPress('${file.dbKey}', 'file')" ontouchend="cancelAdminLongPress()" onmousedown="startAdminLongPress('${file.dbKey}', 'file')" onmouseup="cancelAdminLongPress()" onmouseleave="cancelAdminLongPress()" onclick="if(adminSelectionMode) toggleAdminSelectItem('${file.dbKey}', 'file');" class="relative aspect-square bg-gray-800 rounded-xl border border-gray-700 shadow-sm group no-select cursor-pointer ${selClass}">
+                        <div class="absolute top-2 left-2 w-5 h-5 z-20 select-checkbox ${adminSelectionMode ? 'opacity-100' : 'opacity-0'} pointer-events-none">${checkIcon}</div>
+                        <div class="absolute inset-0 rounded-xl overflow-hidden pointer-events-none">
+                            ${gridIconHtml}
+                            <div class="absolute top-0 w-full h-1/3 bg-gradient-to-b from-black/60 to-transparent"></div>
+                            <div class="absolute bottom-0 w-full bg-gradient-to-t from-black/90 via-black/40 to-transparent p-1.5 pt-6 flex flex-col">
+                                <p class="font-medium text-white text-[10px] leading-tight line-clamp-2" title="${file.file_name}">${file.file_name}</p>
+                                <p class="text-[8px] text-gray-300 mt-0.5 drop-shadow-md">${uploadDate}</p>
+                            </div>
+                        </div>
+                        <span class="absolute top-1.5 left-1.5 text-[9px] text-white font-semibold bg-black/50 px-1.5 py-0.5 rounded backdrop-blur-md z-10 pointer-events-none ${adminSelectionMode ? 'hidden' : ''}">${formatBytes(file.file_size)}</span>
+                        
+                        <div class="absolute top-1 right-1 flex-shrink-0 z-20 ${adminSelectionMode ? 'hidden' : ''}">
+                            <button onclick="event.stopPropagation(); openAdminActionMenu('${file.dbKey}')" class="w-8 h-8 rounded-full bg-black/30 backdrop-blur-md flex items-center justify-center text-white/90 hover:text-white hover:bg-gray-700 transition border border-white/10 shadow-sm">
+                                <i class="fa-solid fa-ellipsis-vertical text-sm"></i>
+                            </button>
+                        </div>
+                    </div>`;
+                } else {
+                    container.innerHTML += `
+                    <div oncontextmenu="event.preventDefault();" ontouchstart="startAdminLongPress('${file.dbKey}', 'file')" ontouchend="cancelAdminLongPress()" onmousedown="startAdminLongPress('${file.dbKey}', 'file')" onmouseup="cancelAdminLongPress()" onmouseleave="cancelAdminLongPress()" onclick="if(adminSelectionMode) toggleAdminSelectItem('${file.dbKey}', 'file');" class="bg-gray-800 p-3 rounded-2xl border border-gray-700 flex justify-between items-center shadow-sm hover:bg-gray-700 transition cursor-pointer no-select ${selClass}">
+                        <div class="flex items-center overflow-hidden flex-1 mr-3 pointer-events-none">
+                            <div class="${adminSelectionMode ? 'block' : 'hidden'} w-6 h-6 mr-3 flex-shrink-0 z-20 select-checkbox pointer-events-none">${checkIcon}</div>
+                            <div class="w-12 h-12 ${colorClass} rounded-xl flex items-center justify-center mr-3 flex-shrink-0 relative">
+                                ${iconHtml}
+                            </div>
+                            <div class="overflow-hidden">
+                                <p class="font-semibold text-white text-sm truncate w-full" title="${file.file_name}">${file.file_name}</p>
+                                <p class="text-[11px] text-gray-400 mt-0.5">${formatBytes(file.file_size)} <span class="mx-1">•</span> ${uploadDate}</p>
+                            </div>
+                        </div>
+                        <div class="relative flex-shrink-0 z-20 ${adminSelectionMode ? 'hidden' : ''}">
+                            <button onclick="event.stopPropagation(); openAdminActionMenu('${file.dbKey}')" class="w-10 h-10 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-700 hover:text-white transition">
+                                <i class="fa-solid fa-ellipsis-vertical text-lg"></i>
+                            </button>
+                        </div>
+                    </div>`;
+                }
+            });
+        }
+
+        // --- 3-DOT ACTION MENU LOGIC ---
+        function openAdminActionMenu(itemKey, isFolder = false) {
+            let btnDownload = document.getElementById('adminBtnDownload');
+            let btnDelete = document.getElementById('adminBtnDelete');
+            let iconBox = document.getElementById('adminActionMenuIcon');
+            let titleBox = document.getElementById('adminActionMenuTitle');
+            let sizeBox = document.getElementById('adminActionMenuSize');
+
+            // Reset Onclick to avoid cloneNode bugs
+            btnDownload.onclick = null;
+            btnDelete.onclick = null;
+
+            if (isFolder) {
+                let folder = globalAllFolders.find(f => f.key === itemKey && f.uid === adminCurrentUserId);
+                if (!folder) { alert("Error: Folder not found!"); return; }
+
+                let totalSize = 0;
+                let filesToDownload = [];
+                function findNestedItems(fId) {
+                    let filesInFolder = globalAllFiles.filter(x => x.folder_id === fId && x.uid === adminCurrentUserId);
+                    filesInFolder.forEach(x => { totalSize += x.file_size || 0; filesToDownload.push(x); });
+                    let subFolders = globalAllFolders.filter(x => x.parent_id === fId && x.uid === adminCurrentUserId);
+                    subFolders.forEach(x => findNestedItems(x.key));
+                }
+                findNestedItems(folder.key);
+
+                titleBox.innerText = folder.folder_name;
+                sizeBox.innerText = `${filesToDownload.length} Items • ${formatBytes(totalSize)}`;
+
+                iconBox.innerHTML = `<i class="fa-solid fa-folder text-blue-500"></i>`;
+                iconBox.className = `w-14 h-14 rounded-xl flex items-center justify-center text-2xl shrink-0 shadow-inner bg-blue-500/20`;
+
+                btnDownload.onclick = function() { closeAdminActionMenu(); adminDownloadFolderAsZip(folder.key, folder.folder_name); };
+                btnDelete.onclick = function() { closeAdminActionMenu(); deleteAdminFolder(folder.uid, folder.key); };
+
+            } else {
+                // FILE ACTION
+                let file = globalAllFiles.find(f => f.dbKey === itemKey && f.uid === adminCurrentUserId);
+                if(!file) { alert("Error: File not found!"); return; }
+
+                titleBox.innerText = file.file_name;
+                sizeBox.innerText = formatBytes(file.file_size || 0);
+                
+                let type = getAdminFileType(file.file_name);
+                let iconHtml = `<i class="fa-solid fa-file text-blue-500"></i>`;
+                let bgClass = "bg-blue-500/20";
+                
+                if(type === 'image') { iconHtml = `<i class="fa-solid fa-image text-red-500"></i>`; bgClass = "bg-red-500/20"; }
+                else if(type === 'video') { iconHtml = `<i class="fa-solid fa-play text-blue-500"></i>`; bgClass = "bg-blue-500/20"; }
+                else if(type === 'audio') { iconHtml = `<i class="fa-solid fa-music text-purple-500"></i>`; bgClass = "bg-purple-500/20"; }
+                else if(type === 'document') { iconHtml = `<i class="fa-solid fa-file-lines text-teal-500"></i>`; bgClass = "bg-teal-500/20"; }
+                else { iconHtml = `<i class="fa-solid fa-file-zipper text-green-500"></i>`; bgClass = "bg-green-500/20"; }
+
+                if (file.thumbnail) {
+                    iconHtml = `<img src="${file.thumbnail}" class="w-full h-full object-cover rounded-xl shadow-sm border border-gray-600">`;
+                    bgClass = "bg-transparent";
+                }
+                
+                iconBox.innerHTML = iconHtml;
+                iconBox.className = `w-14 h-14 rounded-xl flex items-center justify-center text-2xl shrink-0 shadow-inner ${bgClass}`;
+
+                let safeBackendName = file.file_name.replace(/[^a-zA-Z0-9.\-_]/g, '_').replace(/_+/g, '_');
+                let encodedName = encodeURIComponent(safeBackendName);
+                
+                btnDownload.onclick = function() {
+                    closeAdminActionMenu();
+                    let safeMessageId = encodeURIComponent(file.message_id);
+                    let a = document.createElement('a');
+                    a.href = `${API_BASE_URL}/download/${safeMessageId}/${encodedName}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                };
+                btnDelete.onclick = function() { closeAdminActionMenu(); deleteAnyFile(file.uid, file.dbKey, file.message_id); };
+            }
+
+            // SHOW MENU
+            let menu = document.getElementById('adminFileActionMenu');
+            let overlay = document.getElementById('adminFileActionOverlay');
+            let sheet = document.getElementById('adminFileActionSheet');
+
+            if (!history.state || history.state.modal !== 'adminActionMenu') {
+                history.pushState({ modal: 'adminActionMenu' }, "");
+            }
+
+            menu.classList.remove('hidden');
+            menu.classList.add('flex');
+            setTimeout(() => {
+                overlay.classList.remove('opacity-0');
+                // Remove invisible classes and Add visible classes
+                sheet.classList.remove('translate-y-full', 'md:translate-y-10', 'md:scale-95', 'opacity-0');
+                sheet.classList.add('md:translate-y-0', 'md:scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeAdminActionMenu(fromHistory = false) {
+            let overlay = document.getElementById('adminFileActionOverlay');
+            let sheet = document.getElementById('adminFileActionSheet');
+            
+            if (fromHistory !== true && history.state && history.state.modal === 'adminActionMenu') {
+                adminIgnoreNextPopState = true;
+                history.back();
+            }
+            
+            overlay.classList.add('opacity-0');
+            // Re-add invisible classes and remove visible classes
+            sheet.classList.add('translate-y-full', 'md:translate-y-10', 'md:scale-95', 'opacity-0');
+            sheet.classList.remove('md:translate-y-0', 'md:scale-100', 'opacity-100');
+            
+            setTimeout(() => {
+                let menu = document.getElementById('adminFileActionMenu');
+                menu.classList.add('hidden');
+                menu.classList.remove('flex');
+            }, 300);
+        }
+
+        // --- ADMIN MULTI ACTIONS ---
+        async function adminMultiDownload() {
+            let folders = adminSelectedItems.filter(i => i.type === 'folder');
+            let files = adminSelectedItems.filter(i => i.type === 'file');
+
+            if (folders.length > 0 && files.length > 0) {
+                alert("Please select ONLY files OR ONLY ONE folder to download.");
+                return;
+            }
+            if (folders.length > 1) {
+                alert("You can only download ONE folder at a time as ZIP.");
+                return;
+            }
+
+            if (folders.length === 1) {
+                let fData = globalAllFolders.find(f => f.key === folders[0].key && f.uid === adminCurrentUserId);
+                if (fData) {
+                    closeAdminSelectionMode();
+                    adminDownloadFolderAsZip(fData.key, fData.folder_name);
+                }
+            } 
+            else if (files.length > 0) {
+                closeAdminSelectionMode();
+                alert(`Starting ${files.length} downloads... (Allow popups if browser asks)`);
+                
+                for (let i = 0; i < files.length; i++) {
+                    let fData = globalAllFiles.find(f => f.dbKey === files[i].key && f.uid === adminCurrentUserId);
+                    if (fData) {
+                        let safeBackendName = fData.file_name.replace(/[^a-zA-Z0-9.\-_]/g, '_').replace(/_+/g, '_');
+                        let encodedName = encodeURIComponent(safeBackendName);
+                        let safeMessageId = encodeURIComponent(fData.message_id);
+                        let a = document.createElement('a');
+                        a.href = `${API_BASE_URL}/download/${safeMessageId}/${encodedName}`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        await new Promise(resolve => setTimeout(resolve, 1500)); 
+                    }
+                }
+            }
+        }
+
+        async function adminMultiDelete() {
+            if(!confirm("⚠️ Delete ALL selected items FOREVER? This cannot be undone!")) return;
+            
+            let updates = {};
+            let telegramMessagesToDelete = [];
+
+            adminSelectedItems.forEach(item => {
+                if (item.type === 'file') {
+                    let file = globalAllFiles.find(f => f.dbKey === item.key && f.uid === adminCurrentUserId);
+                    if(file) {
+                        updates[`users/${adminCurrentUserId}/files/${item.key}`] = null;
+                        telegramMessagesToDelete.push(file.message_id);
+                    }
+                } else {
+                    let foldersToDelete = [item.key];
+                    function findDescendants(parentId) {
+                        globalAllFolders.filter(f => f.uid === adminCurrentUserId && f.parent_id === parentId).forEach(child => {
+                            foldersToDelete.push(child.key);
+                            findDescendants(child.key);
+                        });
+                    }
+                    findDescendants(item.key);
+
+                    foldersToDelete.forEach(fid => {
+                        updates[`users/${adminCurrentUserId}/folders/${fid}`] = null;
+                        globalAllFiles.filter(f => f.uid === adminCurrentUserId && f.folder_id === fid).forEach(file => {
+                            updates[`users/${adminCurrentUserId}/files/${file.dbKey}`] = null;
+                            telegramMessagesToDelete.push(file.message_id);
+                        });
+                    });
+                }
+            });
+
+            closeAdminSelectionMode();
+            
+            // সার্ভারে Bulk Delete রিকোয়েস্ট পাঠানো (১ ক্লিকে সব ক্লিয়ার)
+            try {
+                if (telegramMessagesToDelete.length > 0) {
+                    let token = await currentUser.getIdToken();
+                    let res = await fetch(`${API_BASE_URL}/bulk-delete`, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + token
+                        },
+                        body: JSON.stringify({ message_ids: telegramMessagesToDelete }) // অথবা messageIdsToDelete
+                    });
+                    if (!res.ok) throw new Error("Server failed to bulk-delete.");
+                }
+                await db.ref().update(updates);
+            } catch (e) {
+                alert("Error deleting items: " + e.message);
+            }
+        }
+
+        // --- SINGLE ACTIONS LOGIC ---
+        async function adminDownloadFolderAsZip(folderId, folderName) {
+            alert("Preparing ZIP on server. Download will start automatically when ready.");
+
+            let filesToZip = [];
+            let totalFilesCount = 0;
+
+            try {
+                function buildStructure(currentFolderId, currentPath) {
+                    let files = globalAllFiles.filter(f => f.uid === adminCurrentUserId && f.folder_id === currentFolderId);
+                    files.forEach(file => {
+                        filesToZip.push({
+                            message_id: file.message_id,
+                            file_name: file.file_name,
+                            file_size: file.file_size,
+                            path: currentPath 
+                        });
+                        totalFilesCount++;
+                    });
+
+                    let subFolders = globalAllFolders.filter(f => f.uid === adminCurrentUserId && f.parent_id === currentFolderId);
+                    subFolders.forEach(sub => {
+                        let newPath = currentPath === "" ? `${sub.folder_name}/` : `${currentPath}${sub.folder_name}/`;
+                        buildStructure(sub.key, newPath);
+                    });
+                }
+
+                buildStructure(folderId, "");
+
+                if (totalFilesCount === 0) {
+                    alert("This folder is completely empty!");
+                    return;
+                }
+
+                let formData = new FormData();
+                formData.append("folder_name", folderName);
+                formData.append("files_data", JSON.stringify(filesToZip));
+
+                let token = await currentUser.getIdToken();
+                let response = await fetch(`${API_BASE_URL}/prepare-zip`, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    body: formData
+                });
+
+                let result = await response.json();
+
+                if (response.ok && result.status === "ready") {
+                    let a = document.createElement('a');
+                    a.href = `${API_BASE_URL}${result.download_url}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                } else {
+                    alert("Error: " + (result.error || "Failed to generate ZIP"));
+                }
+
+            } catch(e) {
+                alert("Error connecting to server. Please check your network.");
+                console.error(e);
+            }
+        }
+
+        async function deleteAdminFolder(uid, folderKey) {
+            if(!confirm("⚠️ Admin Alert: Delete this folder and ALL items inside it FOREVER?")) return;
+            
+            let updates = {};
+            let foldersToDelete = [folderKey];
+            let filesToDelete = [];
+
+            function findDescendants(parentId) {
+                let children = globalAllFolders.filter(f => f.uid === uid && f.parent_id === parentId);
+                children.forEach(child => {
+                    foldersToDelete.push(child.key);
+                    findDescendants(child.key);
+                });
+            }
+            findDescendants(folderKey);
+
+            foldersToDelete.forEach(fid => {
+                updates[`users/${uid}/folders/${fid}`] = null;
+                let folderFiles = globalAllFiles.filter(f => f.uid === uid && f.folder_id === fid);
+                folderFiles.forEach(file => {
+                    filesToDelete.push(file);
+                    updates[`users/${uid}/files/${file.dbKey}`] = null;
+                });
+            });
+
+            try {
+                let messageIdsToDelete = filesToDelete.map(f => f.message_id).filter(id => id);
+                if (messageIdsToDelete.length > 0) {
+                    let res = await fetch(`${API_BASE_URL}/bulk-delete`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message_ids: messageIdsToDelete })
+                    });
+                    if (!res.ok) throw new Error("Server failed to delete files.");
+                }
+                await db.ref().update(updates);
+            } catch(e) {
+                alert("Error deleting folder: " + e.message);
+            }
+        }
+
+        async function deleteAnyFile(uid, dbKey, message_id) {
+                if(!confirm("⚠️ Delete this file FOREVER? This cannot be undone!")) return;
+                try {
+                    let token = await currentUser.getIdToken();
+                    let safeMessageId = encodeURIComponent(message_id);
+                    let res = await fetch(`${API_BASE_URL}/delete/${safeMessageId}`, { 
+                        method: 'DELETE',
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                if (!res.ok) throw new Error("Server failed to delete file.");
+                await db.ref(`users/${uid}/files/${dbKey}`).remove();
+            } catch(e) {
+                alert("Error deleting file: " + e.message);
+            }
+        }
+   </script>
 </body>
 </html>
