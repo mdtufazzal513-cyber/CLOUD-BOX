@@ -85,6 +85,31 @@
             background-color: #0f172a;
             border-radius: 50%;
         }
+        
+        /* Multi-Select Styles */
+        .selected-card {
+            background-color: rgba(59, 130, 246, 0.15) !important;
+            border-color: rgba(59, 130, 246, 0.5) !important;
+        }
+        .select-checkbox { transition: all 0.2s ease; }
+        .no-select { user-select: none; -webkit-user-select: none; }
+        
+        /* Auth Magic Background & Shake Animation */
+        @keyframes blob {
+            0% { transform: translate(0px, 0px) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+            100% { transform: translate(0px, 0px) scale(1); }
+        }
+        .animate-blob { animation: blob 7s infinite; }
+        .animation-delay-2000 { animation-delay: 2s; }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+        .error-shake { animation: shake 0.4s ease-in-out; }
     </style>
 </head>
 <body class="bg-slate-900">
@@ -105,9 +130,84 @@
         </div>
 
         <!-- TOAST NOTIFICATION -->
-        <div id="toastNotification" class="fixed top-10 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-5 py-3 rounded-full shadow-2xl flex items-center gap-3 z-[100] transition-all duration-300 opacity-0 -translate-y-10 pointer-events-none border border-slate-700">
-            <i class="fa-solid fa-circle-notch fa-spin text-blue-400 text-lg"></i>
-            <span id="toastMessage" class="text-sm font-semibold tracking-wide">Processing, please wait...</span>
+<div id="toastNotification" class="fixed top-10 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-5 py-3 rounded-full shadow-2xl flex items-center gap-3 z-[1000] transition-all duration-300 opacity-0 -translate-y-10 pointer-events-none border border-slate-700">
+    <i id="toastIcon" class="fa-solid fa-circle-notch fa-spin text-blue-400 text-lg"></i>
+    <span id="toastMessage" class="text-sm font-semibold tracking-wide">Processing, please wait...</span>
+</div>
+
+        <!-- 30 SECONDS GRACEFUL SHUTDOWN BANNER -->
+        <div id="gracefulBanner" class="fixed top-0 left-0 w-full md:max-w-[800px] md:left-1/2 md:-translate-x-1/2 z-[1500] bg-gradient-to-r from-orange-600 to-red-600 shadow-[0_10px_30px_rgba(239,68,68,0.4)] transition-all duration-500 -translate-y-[150%] opacity-0 flex flex-col pointer-events-auto">
+            <div class="px-5 py-3.5 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white animate-pulse">
+                        <i class="fa-solid fa-server text-sm"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-white font-bold text-sm leading-tight tracking-wide">Server going down in <span id="gracefulSeconds" class="text-xl font-black">30</span>s</h3>
+                        <p class="text-white/80 text-[10px] font-medium mt-0.5">Please wait while we finish your active uploads...</p>
+                    </div>
+                </div>
+                <i class="fa-solid fa-triangle-exclamation text-3xl text-white/20 drop-shadow-md"></i>
+            </div>
+            <!-- Animated Progress Bar -->
+            <div class="w-full bg-black/30 h-1">
+                <div id="gracefulProgressBar" class="bg-white h-full transition-all duration-1000 ease-linear" style="width: 100%;"></div>
+            </div>
+        </div>
+
+        <!-- FULL-SCREEN STRICT LOCK (For Deletion) -->
+        <div id="fullScreenLock" class="fixed inset-0 z-[9999] hidden bg-slate-900/95 backdrop-blur-md flex-col items-center justify-center text-center pointer-events-auto touch-none transition-opacity">
+            <div class="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(239,68,68,0.3)] animate-pulse">
+                <i class="fa-solid fa-radiation fa-spin text-4xl text-red-500"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-white mb-2">Deleting Account...</h2>
+            <p class="text-slate-400 text-sm px-8">Please do not close the app or press back.<br>Wiping all your files permanently.</p>
+        </div>
+
+        <!-- FULL-SCREEN MAINTENANCE MODE -->
+        <div id="maintenanceScreen" class="fixed inset-0 z-[99999] hidden bg-[#0f172a] flex-col items-center justify-center text-center pointer-events-auto touch-none">
+            <!-- Magic Animated Background -->
+            <div class="absolute top-1/4 left-1/4 w-64 h-64 bg-indigo-600 rounded-full mix-blend-screen filter blur-[100px] opacity-40 animate-blob pointer-events-none"></div>
+            <div class="absolute bottom-1/4 right-1/4 w-64 h-64 bg-purple-600 rounded-full mix-blend-screen filter blur-[100px] opacity-40 animate-blob animation-delay-2000 pointer-events-none"></div>
+
+            <div class="relative z-10 flex flex-col items-center p-8 bg-slate-800/40 backdrop-blur-2xl border border-slate-700/50 rounded-3xl mx-5 shadow-2xl max-w-sm w-full">
+                <!-- Calming Wrench/Cloud Icon -->
+                <div class="relative w-24 h-24 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-3xl flex items-center justify-center shadow-[0_0_40px_rgba(99,102,241,0.4)] mb-8">
+                    <i class="fa-solid fa-screwdriver-wrench text-4xl text-white"></i>
+                    <div class="absolute -top-2 -right-2 w-8 h-8 bg-slate-900 rounded-full flex items-center justify-center border-2 border-slate-700">
+                        <i class="fa-solid fa-cloud text-xs text-blue-400 animate-pulse"></i>
+                    </div>
+                </div>
+
+                <h1 class="text-2xl font-bold text-white mb-3 tracking-wide">System Update</h1>
+                <p class="text-slate-400 text-sm mb-8 leading-relaxed">We are polishing the cloud to give you a better and faster experience. We'll be back shortly.</p>
+
+                <!-- Timer Container -->
+                <div class="w-full bg-slate-900/80 p-5 rounded-2xl border border-slate-700/50 shadow-inner">
+                    <p class="text-[10px] uppercase tracking-[0.2em] font-bold text-indigo-400 mb-3">Estimated Time Remaining</p>
+                    
+                    <div id="maintenanceTimerDisplay" class="flex justify-center gap-3 text-white">
+                        <div class="flex flex-col items-center">
+                            <span id="mt-hours" class="text-3xl font-mono font-black">00</span>
+                            <span class="text-[9px] text-slate-500 mt-1 uppercase font-bold">Hours</span>
+                        </div>
+                        <span class="text-2xl font-bold text-slate-600 self-start mt-1">:</span>
+                        <div class="flex flex-col items-center">
+                            <span id="mt-minutes" class="text-3xl font-mono font-black">00</span>
+                            <span class="text-[9px] text-slate-500 mt-1 uppercase font-bold">Minutes</span>
+                        </div>
+                        <span class="text-2xl font-bold text-slate-600 self-start mt-1">:</span>
+                        <div class="flex flex-col items-center">
+                            <span id="mt-seconds" class="text-3xl font-mono font-black">00</span>
+                            <span class="text-[9px] text-slate-500 mt-1 uppercase font-bold">Seconds</span>
+                        </div>
+                    </div>
+
+                    <div id="mt-wrapup-msg" class="hidden text-sm font-bold text-yellow-400 mt-2 animate-pulse">
+                        <i class="fa-solid fa-spinner fa-spin mr-2"></i> Almost done, wrapping up!
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- NATIVE, SIMPLE & PROFESSIONAL BOTTOM SHEET (0% LAG) -->
@@ -148,11 +248,33 @@
                     <span class="font-medium text-[15px] text-slate-200">Move</span>
                 </button>
 
+                <button id="btnRenameFile" class="w-full flex items-center gap-4 p-3 rounded-xl active:bg-slate-700/50 transition-colors duration-200">
+                    <div class="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-yellow-400 shadow-sm">
+                        <i class="fa-solid fa-pen-to-square text-sm"></i>
+                    </div>
+                    <span class="font-medium text-[15px] text-slate-200">Rename</span>
+                </button>
+
                 <button id="btnDeleteFile" class="w-full flex items-center gap-4 p-3 rounded-xl active:bg-red-500/10 transition-colors duration-200">
                     <div class="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-red-400">
                         <i class="fa-solid fa-trash-can text-sm"></i>
                     </div>
-                    <span class="font-medium text-[15px] text-red-400">Delete</span>
+                    <span class="font-medium text-[15px] text-red-400">Move to Trash</span>
+                </button>
+                
+                <!-- Trash Specific Actions (Hidden by Default) -->
+                <button id="btnRestoreFile" class="w-full hidden items-center gap-4 p-3 rounded-xl active:bg-green-500/10 transition-colors duration-200">
+                    <div class="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-green-400">
+                        <i class="fa-solid fa-trash-arrow-up text-sm"></i>
+                    </div>
+                    <span class="font-medium text-[15px] text-green-400">Restore</span>
+                </button>
+
+                <button id="btnDeleteForeverFile" class="w-full hidden items-center gap-4 p-3 rounded-xl active:bg-red-500/10 transition-colors duration-200">
+                    <div class="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-red-500 shadow-sm border border-red-500/20">
+                        <i class="fa-solid fa-radiation text-sm"></i>
+                    </div>
+                    <span class="font-medium text-[15px] text-red-500">Delete Forever</span>
                 </button>
             </div>
         </div>
@@ -227,29 +349,98 @@
             </div>
         </div>
 
-        <!-- AUTH SECTION -->
-        <div id="authSection" class="hidden flex-1 flex flex-col justify-center items-center p-6 fade-in">
-            <div class="w-16 h-16 bg-blue-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-blue-500/30">
-                <i class="fa-solid fa-box-open text-3xl text-white"></i>
+        <!-- RENAME MODAL -->
+        <div id="renameModal" class="fixed inset-0 z-[500] hidden items-center justify-center p-4 pointer-events-none">
+            <div id="renameOverlay" onclick="closeRenameModal()" class="absolute inset-0 bg-black/60 opacity-0 transition-opacity duration-300 pointer-events-auto"></div>
+            <div id="renameBox" class="bg-slate-800 w-full max-w-sm rounded-3xl p-6 transform scale-95 opacity-0 transition-all duration-300 shadow-2xl pointer-events-auto relative border border-slate-700">
+                <h3 class="text-lg font-bold text-white mb-4">Rename Item</h3>
+                <input type="text" id="renameInput" placeholder="Enter new name" class="w-full bg-slate-900 border border-slate-700 text-white px-4 py-3 rounded-xl focus:outline-none focus:border-blue-500 transition mb-6">
+                <div class="flex justify-end gap-3">
+                    <button onclick="closeRenameModal()" class="px-5 py-2.5 rounded-xl font-semibold text-slate-400 hover:text-white hover:bg-slate-700 transition">Cancel</button>
+                    <button onclick="confirmRename()" class="bg-blue-600 hover:bg-blue-500 px-5 py-2.5 rounded-xl font-bold text-white transition">Save</button>
+                </div>
             </div>
-            <h1 class="text-3xl font-bold mb-2">CloudBox</h1>
-            <p class="text-slate-400 mb-8 text-sm">Your secure unlimited storage</p>
-            
-            <div class="w-full space-y-4">
-                <div class="relative">
-                    <i class="fa-solid fa-envelope absolute left-4 top-4 text-slate-400"></i>
-                    <input type="email" id="email" placeholder="Email Address" class="w-full pl-12 pr-4 py-3 rounded-xl bg-slate-800 border border-slate-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition text-white">
+        </div>
+
+        <!-- AUTH SECTION (Modern UI) -->
+        <div id="authSection" class="hidden flex-1 flex flex-col justify-center items-center p-6 relative overflow-hidden fade-in">
+            <!-- Magic Blurred Backgrounds -->
+            <div class="absolute top-[10%] left-[-10%] w-72 h-72 bg-blue-600 rounded-full mix-blend-screen filter blur-[80px] opacity-30 animate-blob pointer-events-none"></div>
+            <div class="absolute bottom-[10%] right-[-10%] w-72 h-72 bg-purple-600 rounded-full mix-blend-screen filter blur-[80px] opacity-30 animate-blob animation-delay-2000 pointer-events-none"></div>
+
+            <div id="authCard" class="w-full max-w-md bg-slate-800/60 backdrop-blur-2xl border border-slate-600/50 rounded-3xl p-8 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] relative z-10 transition-transform duration-300">
+                <!-- Icon Header -->
+                <div class="flex flex-col items-center mb-6">
+                    <div class="w-16 h-16 bg-gradient-to-tr from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30 mb-4">
+                        <i class="fa-solid fa-cloud text-3xl text-white"></i>
+                    </div>
+                    <h1 id="authTitle" class="text-2xl font-bold text-white transition-all">Welcome Back</h1>
+                    <p id="authSubtitle" class="text-sm text-slate-400 mt-1 text-center transition-all">Enter your details to access your cloud</p>
                 </div>
-                <div class="relative">
-                    <i class="fa-solid fa-lock absolute left-4 top-4 text-slate-400"></i>
-                    <input type="password" id="password" placeholder="Password" class="w-full pl-12 pr-4 py-3 rounded-xl bg-slate-800 border border-slate-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition text-white">
+
+                <!-- 1. Login Form -->
+                <div id="loginForm" class="w-full space-y-4">
+                    <div class="relative">
+                        <i class="fa-solid fa-envelope absolute left-4 top-4 text-slate-400"></i>
+                        <input type="email" id="loginEmail" placeholder="Email Address" class="w-full pl-11 pr-4 py-3.5 rounded-xl bg-slate-900/50 border border-slate-700 focus:border-blue-500 focus:bg-slate-900 transition text-white outline-none">
+                    </div>
+                    <div class="relative">
+                        <i class="fa-solid fa-lock absolute left-4 top-4 text-slate-400"></i>
+                        <input type="password" id="loginPassword" placeholder="Password" class="w-full pl-11 pr-12 py-3.5 rounded-xl bg-slate-900/50 border border-slate-700 focus:border-blue-500 focus:bg-slate-900 transition text-white outline-none">
+                        <button onclick="togglePassword('loginPassword', 'loginEyeIcon')" class="absolute right-4 top-4 text-slate-400 hover:text-white transition">
+                            <i id="loginEyeIcon" class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="flex justify-end">
+                        <button onclick="switchAuthMode('forgot')" class="text-sm text-blue-400 hover:text-blue-300 font-medium transition pb-1">Forgot password?</button>
+                    </div>
+                    <button id="loginBtn" onclick="login()" class="w-full bg-blue-600 hover:bg-blue-500 active:scale-95 py-3.5 rounded-xl font-bold text-white shadow-lg shadow-blue-600/20 transition flex items-center justify-center gap-2">
+                        Sign In
+                    </button>
+                    <p class="text-center text-sm text-slate-400 mt-4">Don't have an account? <button onclick="switchAuthMode('signup')" class="text-blue-400 font-bold hover:underline">Sign up</button></p>
                 </div>
-                
-                <div class="pt-2 flex flex-col gap-3">
-                    <button onclick="login()" class="w-full bg-blue-600 active:bg-blue-700 py-3.5 rounded-xl font-bold text-white shadow-lg shadow-blue-600/30 transition">Sign In</button>
-                    <button onclick="register()" class="w-full bg-slate-800 active:bg-slate-700 py-3.5 rounded-xl font-bold text-blue-400 border border-slate-700 transition">Create Account</button>
+
+                <!-- 2. Signup Form -->
+                <div id="signupForm" class="hidden w-full space-y-4">
+                    <div class="relative">
+                        <i class="fa-solid fa-user absolute left-4 top-4 text-slate-400"></i>
+                        <input type="text" id="signupName" placeholder="Full Name" class="w-full pl-11 pr-4 py-3.5 rounded-xl bg-slate-900/50 border border-slate-700 focus:border-blue-500 focus:bg-slate-900 transition text-white outline-none">
+                    </div>
+                    <div class="relative">
+                        <i class="fa-solid fa-envelope absolute left-4 top-4 text-slate-400"></i>
+                        <input type="email" id="signupEmail" placeholder="Email Address" class="w-full pl-11 pr-4 py-3.5 rounded-xl bg-slate-900/50 border border-slate-700 focus:border-blue-500 focus:bg-slate-900 transition text-white outline-none">
+                    </div>
+                    <div class="relative">
+                        <i class="fa-solid fa-lock absolute left-4 top-4 text-slate-400"></i>
+                        <input type="password" id="signupPassword" placeholder="Create Password (min 6)" class="w-full pl-11 pr-12 py-3.5 rounded-xl bg-slate-900/50 border border-slate-700 focus:border-blue-500 focus:bg-slate-900 transition text-white outline-none">
+                        <button onclick="togglePassword('signupPassword', 'signupEyeIcon')" class="absolute right-4 top-4 text-slate-400 hover:text-white transition">
+                            <i id="signupEyeIcon" class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                    <button id="signupBtn" onclick="register()" class="w-full bg-purple-600 hover:bg-purple-500 active:scale-95 py-3.5 rounded-xl font-bold text-white shadow-lg shadow-purple-600/20 transition flex items-center justify-center gap-2 mt-4">
+                        Create Account
+                    </button>
+                    <p class="text-center text-sm text-slate-400 mt-4">Already have an account? <button onclick="switchAuthMode('login')" class="text-blue-400 font-bold hover:underline">Sign in</button></p>
                 </div>
-                <p id="authError" class="text-red-400 text-center mt-2 text-sm font-medium"></p>
+
+                <!-- 3. Forgot Password Form -->
+                <div id="forgotForm" class="hidden w-full space-y-4">
+                    <p class="text-xs text-slate-400 text-center mb-4 leading-relaxed">Enter your registered email, and we'll send you a secure link to reset your password.</p>
+                    <div class="relative">
+                        <i class="fa-solid fa-envelope absolute left-4 top-4 text-slate-400"></i>
+                        <input type="email" id="forgotEmail" placeholder="Registered Email" class="w-full pl-11 pr-4 py-3.5 rounded-xl bg-slate-900/50 border border-slate-700 focus:border-blue-500 focus:bg-slate-900 transition text-white outline-none">
+                    </div>
+                    <button id="forgotBtn" onclick="resetPassword()" class="w-full bg-slate-700 hover:bg-slate-600 active:scale-95 border border-slate-600 py-3.5 rounded-xl font-bold text-white transition flex items-center justify-center gap-2 mt-4">
+                        Send Reset Link
+                    </button>
+                    <p class="text-center text-sm mt-4"><button onclick="switchAuthMode('login')" class="text-slate-400 hover:text-white font-medium transition"><i class="fa-solid fa-arrow-left mr-1"></i> Back to Login</button></p>
+                </div>
+
+                <!-- Error/Success Message Box -->
+                <div id="authAlertBox" class="hidden mt-4 p-3 rounded-lg items-center gap-2 text-sm font-medium transition-all">
+                    <i id="authAlertIcon" class="fa-solid"></i>
+                    <span id="authAlertText"></span>
+                </div>
             </div>
         </div>
 
@@ -267,6 +458,17 @@
                     <i class="fa-solid fa-user text-[10px] text-slate-300"></i>
                 </div>
             </header>
+            
+            <!-- SELECTION MODE HEADER (Hidden By Default) -->
+            <div id="selectionHeader" class="glass-header fixed top-0 w-full max-w-full md:max-w-[800px] z-[60] px-5 py-2.5 flex justify-between items-center transition-transform duration-300 -translate-y-full">
+                <div class="flex items-center gap-4">
+                    <button onclick="closeSelectionMode()" class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-slate-300 active:bg-slate-600 transition">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                    <h1 id="selectionCountText" class="text-lg font-bold text-white">0 Selected</h1>
+                </div>
+                <button id="selectAllBtn" onclick="toggleSelectAll()" class="text-sm font-semibold text-blue-400 active:text-blue-300">Select All</button>
+            </div>
 
             <main class="flex-1 overflow-y-auto scrollable-content pt-16 pb-20 px-4">
                 
@@ -278,11 +480,11 @@
                             <h2 class="text-lg font-bold text-white mb-2">Storage Overview</h2>
                             <div class="flex items-center gap-2 text-sm text-slate-300 mb-1">
                                 <div class="w-2 h-2 rounded-full bg-blue-500"></div>
-                                <span id="usedStorageText">0.00 MB</span> <span class="text-slate-500">| Total: 25.00 GB</span>
+                                <span id="usedStorageText">0.00 MB</span> <span class="text-slate-500">| Total: ...</span>
                             </div>
                             <div class="flex items-center gap-2 text-sm text-slate-400">
                                 <div class="w-2 h-2 rounded-full bg-slate-500"></div>
-                                <span id="remainingStorageText">Remaining: 25.00 GB</span>
+                                <span id="remainingStorageText">Remaining: ...</span> <span class="mx-1 text-slate-600">|</span> <span id="trashStorageText" class="text-slate-500 font-semibold"><i class="fa-solid fa-trash-can text-[10px] mr-1"></i>0 B</span>
                             </div>
                         </div>
                         <div class="relative w-20 h-20 circular-progress shadow-inner" id="storageProgress" style="--progress: 0deg;">
@@ -391,14 +593,14 @@
                     <h2 class="text-2xl font-bold mb-2">Upload File</h2>
                     <p class="text-slate-400 text-sm mb-8 text-center px-4">Select any file from your device to upload securely to the cloud.</p>
                     
-                    <div class="w-full max-w-xs md:max-w-md relative group cursor-pointer" onclick="document.getElementById('fileInput').click()">
-                        <div class="absolute inset-0 bg-blue-500 rounded-3xl blur opacity-20"></div>
-                        <div class="relative bg-slate-800 border-2 border-dashed border-slate-600 rounded-3xl p-10 flex flex-col items-center text-center transition active:bg-slate-700">
-                            <div class="w-16 h-16 bg-slate-700 rounded-full flex items-center justify-center mb-4 text-blue-400">
-                                <i class="fa-solid fa-arrow-up-from-bracket text-2xl"></i>
+                    <div id="uploadBoxWrapper" class="w-full max-w-xs md:max-w-md relative group cursor-pointer transition-all duration-300" onclick="handleUploadClick()">
+                        <div id="uploadBoxGlow" class="absolute inset-0 bg-blue-500 rounded-3xl blur opacity-20 transition-colors"></div>
+                        <div id="uploadBoxInner" class="relative bg-slate-800 border-2 border-dashed border-slate-600 rounded-3xl p-10 flex flex-col items-center text-center transition active:bg-slate-700">
+                            <div id="uploadBoxIconBg" class="w-16 h-16 bg-slate-700 rounded-full flex items-center justify-center mb-4 text-blue-400 transition-colors">
+                                <i id="uploadBoxIcon" class="fa-solid fa-arrow-up-from-bracket text-2xl"></i>
                             </div>
-                            <span class="font-semibold text-blue-400">Tap to Browse</span>
-                            <span class="text-xs text-slate-500 mt-1">Files, Photos, Videos</span>
+                            <span id="uploadBoxTextTitle" class="font-semibold text-blue-400 transition-colors">Tap to Browse</span>
+                            <span id="uploadBoxTextSub" class="text-xs text-slate-500 mt-1 transition-colors">Files, Photos, Videos</span>
                         </div>
                         <input type="file" id="fileInput" class="hidden" multiple>
                     </div>
@@ -443,26 +645,164 @@
                     </div>
                     <div id="categoryFileList" class="flex flex-col gap-3 pb-10"></div>
                 </div>
-                <div id="profileTab" class="hidden fade-in">
-                    <h2 class="text-xl font-bold text-white mb-6 px-1">Account</h2>
-                    
-                    <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700 mb-6 flex items-center gap-4">
-                        <div class="w-14 h-14 rounded-full bg-blue-500/20 text-blue-500 flex items-center justify-center text-2xl">
-                            <i class="fa-solid fa-user"></i>
+                <!-- TRASH TAB -->
+                <div id="trashTab" class="hidden fade-in flex flex-col h-full pb-10">
+                    <div class="relative mb-6 px-1 flex justify-between items-center h-10 shrink-0">
+                        <div class="flex items-center gap-3">
+                            <button onclick="history.back()" class="w-10 h-10 bg-slate-800 border border-slate-700 rounded-full flex items-center justify-center text-slate-300 active:bg-slate-700 transition">
+                                <i class="fa-solid fa-arrow-left"></i>
+                            </button>
+                            <div>
+                                <h2 class="text-xl font-bold text-white flex items-center gap-2">Recycle Bin</h2>
+                                <p id="trashSubtitle" class="text-xs text-slate-400">Items auto-delete in 30 days</p>
+                            </div>
                         </div>
-                        <div class="overflow-hidden">
-                            <p class="text-slate-400 text-xs uppercase font-bold tracking-wider mb-1">Logged in as</p>
-                            <p id="userEmailDisplay" class="font-semibold text-white truncate text-sm selectable">user@email.com</p>
+                        <button onclick="emptyTrash()" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 px-3 py-1.5 rounded-lg text-sm font-semibold border border-red-500/20 active:scale-95 transition flex items-center gap-1.5 shadow-sm">
+                            <i class="fa-solid fa-broom text-xs"></i> Empty
+                        </button>
+                    </div>
+                    <div id="trashFileList" class="flex-1 overflow-y-auto scrollable-content flex flex-col gap-3 relative pb-20"></div>
+                </div>
+
+                <div id="profileTab" class="hidden fade-in pb-10">
+                    
+                    <!-- Avatar & Profile Header -->
+                    <div class="flex flex-col items-center mt-6 mb-8">
+                        <div class="relative group cursor-pointer active:scale-95 transition-transform" onclick="document.getElementById('profilePicInput').click()">
+                            <div id="profileAvatar" class="w-28 h-28 rounded-full bg-slate-800 border-4 border-slate-700 flex items-center justify-center text-5xl text-blue-500 shadow-xl overflow-hidden object-cover">
+                                <i class="fa-solid fa-user"></i>
+                            </div>
+                            <div class="absolute bottom-0 right-0 w-9 h-9 bg-blue-600 rounded-full border-4 border-[#0f172a] flex items-center justify-center text-white shadow-lg">
+                                <i class="fa-solid fa-camera text-xs"></i>
+                            </div>
+                            <input type="file" id="profilePicInput" accept="image/*" class="hidden">
+                        </div>
+
+                        <div class="mt-4 text-center">
+                            <h2 class="text-2xl font-bold text-white flex items-center justify-center gap-2">
+                                <span id="userNameDisplay" class="truncate max-w-[220px]">User Name</span>
+                                <button onclick="openEditNameModal()" class="text-slate-400 hover:text-blue-400 active:scale-90 transition">
+                                    <i class="fa-solid fa-pen-to-square text-sm"></i>
+                                </button>
+                            </h2>
+                            <div class="flex items-center justify-center gap-2 mt-1.5">
+                                <span id="userEmailDisplay" class="text-slate-400 text-xs font-medium">user@email.com</span>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden">
-                        <button onclick="logout()" class="w-full p-4 flex items-center text-red-400 active:bg-slate-700 transition text-left">
-                            <div class="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center mr-3">
-                                <i class="fa-solid fa-right-from-bracket"></i>
+                    <!-- Quick Stats Grid -->
+                    <div class="grid grid-cols-3 gap-3 mb-8 px-1">
+                        <div class="bg-slate-800 p-3.5 rounded-2xl border border-slate-700 flex flex-col items-center justify-center text-center shadow-sm">
+                            <div class="w-8 h-8 rounded-full bg-blue-500/10 text-blue-400 flex items-center justify-center mb-2">
+                                <i class="fa-solid fa-file-invoice"></i>
                             </div>
-                            <span class="font-semibold text-sm">Log Out</span>
+                            <p id="profileTotalFiles" class="font-bold text-white text-sm">0</p>
+                            <p class="text-[10px] font-semibold text-slate-400 mt-0.5">Total Files</p>
+                        </div>
+                        <div class="bg-slate-800 p-3.5 rounded-2xl border border-slate-700 flex flex-col items-center justify-center text-center shadow-sm">
+                            <div class="w-8 h-8 rounded-full bg-green-500/10 text-green-400 flex items-center justify-center mb-2">
+                                <i class="fa-solid fa-hard-drive"></i>
+                            </div>
+                            <p id="profileTotalStorage" class="font-bold text-white text-sm">0 B</p>
+                            <p class="text-[10px] font-semibold text-slate-400 mt-0.5">Storage Used</p>
+                        </div>
+                        <div class="bg-slate-800 p-3.5 rounded-2xl border border-slate-700 flex flex-col items-center justify-center text-center shadow-sm">
+                            <div class="w-8 h-8 rounded-full bg-purple-500/10 text-purple-400 flex items-center justify-center mb-2">
+                                <i class="fa-solid fa-calendar-days"></i>
+                            </div>
+                            <p id="profileJoinDate" class="font-bold text-white text-[10px] leading-tight mt-1 truncate w-full">Unknown</p>
+                            <p class="text-[10px] font-semibold text-slate-400 mt-0.5">Join Date</p>
+                        </div>
+                    </div>
+
+                    <!-- Settings List -->
+                    <h3 class="text-xs font-bold text-slate-500 mb-3 px-3 uppercase tracking-wider">Account Settings</h3>
+                    <div class="bg-slate-800 rounded-3xl border border-slate-700 overflow-hidden mb-8 shadow-sm">
+                        
+                        <button onclick="openChangePasswordModal()" class="w-full p-4 flex justify-between items-center active:bg-slate-700 hover:bg-slate-700/50 transition text-left border-b border-slate-700">
+                            <div class="flex items-center text-slate-200">
+                                <div class="w-9 h-9 rounded-full bg-slate-700 flex items-center justify-center mr-3.5 text-slate-300">
+                                    <i class="fa-solid fa-lock"></i>
+                                </div>
+                                <span class="font-semibold text-sm">Change Password</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-right text-[10px] text-slate-500"></i>
                         </button>
+
+                        <button onclick="openTrash()" class="w-full p-4 flex justify-between items-center active:bg-slate-700 hover:bg-slate-700/50 transition text-left border-b border-slate-700">
+                            <div class="flex items-center text-slate-200">
+                                <div class="w-9 h-9 rounded-full bg-slate-700 flex items-center justify-center mr-3.5 text-slate-300">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </div>
+                                <span class="font-semibold text-sm">Recycle Bin</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-xs font-bold text-slate-400">
+                                <span id="profileTrashSize">0 B</span>
+                                <i class="fa-solid fa-chevron-right text-[10px] text-slate-500"></i>
+                            </div>
+                        </button>
+                        
+                        <button onclick="logout()" class="w-full p-4 flex items-center justify-between text-slate-200 active:bg-slate-700 hover:bg-slate-700/50 transition text-left">
+                            <div class="flex items-center">
+                                <div class="w-9 h-9 rounded-full bg-slate-700 flex items-center justify-center mr-3.5 text-slate-300">
+                                    <i class="fa-solid fa-right-from-bracket"></i>
+                                </div>
+                                <span class="font-semibold text-sm">Log Out</span>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- Danger Zone (Minimal & Professional) -->
+                    <div class="mt-8 mb-6 flex justify-center">
+                        <button onclick="openDeleteAccountModal()" class="text-[11px] font-semibold text-red-500/80 hover:text-red-500 transition active:scale-95 px-4 py-2">
+                            Delete Account
+                        </button>
+                    </div>
+                </div>
+
+                <!-- EDIT NAME MODAL (Hidden Placeholder for Step 3) -->
+                <div id="editNameModal" class="fixed inset-0 z-[500] hidden items-center justify-center p-4 pointer-events-none">
+                    <div id="editNameOverlay" onclick="closeEditNameModal()" class="absolute inset-0 bg-black/60 opacity-0 transition-opacity duration-300 pointer-events-auto"></div>
+                    <div id="editNameBox" class="bg-slate-800 w-full max-w-sm rounded-3xl p-6 transform scale-95 opacity-0 transition-all duration-300 shadow-2xl pointer-events-auto relative border border-slate-700">
+                        <h3 class="text-lg font-bold text-white mb-4">Edit Profile Name</h3>
+                        <input type="text" id="newProfileNameInput" placeholder="Enter your full name" class="w-full bg-slate-900 border border-slate-700 text-white px-4 py-3 rounded-xl focus:outline-none focus:border-blue-500 transition mb-6">
+                        <div class="flex justify-end gap-3">
+                            <button onclick="closeEditNameModal()" class="px-5 py-2.5 rounded-xl font-semibold text-slate-400 hover:text-white hover:bg-slate-700 transition">Cancel</button>
+                            <button onclick="saveNewProfileName()" id="btnSaveName" class="bg-blue-600 hover:bg-blue-500 px-5 py-2.5 rounded-xl font-bold text-white transition flex items-center gap-2 shadow-lg shadow-blue-500/20">Save</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- CHANGE PASSWORD MODAL -->
+                <div id="changePassModal" class="fixed inset-0 z-[500] hidden items-center justify-center p-4 pointer-events-none">
+                    <div id="changePassOverlay" onclick="closeChangePasswordModal()" class="absolute inset-0 bg-black/60 opacity-0 transition-opacity duration-300 pointer-events-auto"></div>
+                    <div id="changePassBox" class="bg-slate-800 w-full max-w-sm rounded-3xl p-6 transform scale-95 opacity-0 transition-all duration-300 shadow-2xl pointer-events-auto relative border border-slate-700">
+                        <h3 class="text-lg font-bold text-white mb-4">Change Password</h3>
+                        <input type="password" id="currentPasswordInput" placeholder="Current Password" class="w-full bg-slate-900 border border-slate-700 text-white px-4 py-3 rounded-xl focus:outline-none focus:border-blue-500 transition mb-3">
+                        <input type="password" id="newPasswordInput" placeholder="New Password (min 6)" class="w-full bg-slate-900 border border-slate-700 text-white px-4 py-3 rounded-xl focus:outline-none focus:border-blue-500 transition mb-6">
+                        <div class="flex justify-end gap-3">
+                            <button onclick="closeChangePasswordModal()" class="px-5 py-2.5 rounded-xl font-semibold text-slate-400 hover:text-white hover:bg-slate-700 transition">Cancel</button>
+                            <button onclick="saveNewPassword()" id="btnSavePass" class="bg-blue-600 hover:bg-blue-500 px-5 py-2.5 rounded-xl font-bold text-white transition flex items-center gap-2 shadow-lg shadow-blue-500/20">Update</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DELETE ACCOUNT MODAL -->
+                <div id="deleteAccModal" class="fixed inset-0 z-[500] hidden items-center justify-center p-4 pointer-events-none">
+                    <div id="deleteAccOverlay" onclick="closeDeleteAccountModal()" class="absolute inset-0 bg-black/70 backdrop-blur-sm opacity-0 transition-opacity duration-300 pointer-events-auto"></div>
+                    <div id="deleteAccBox" class="bg-slate-800 w-full max-w-sm rounded-3xl p-6 transform scale-95 opacity-0 transition-all duration-300 shadow-2xl pointer-events-auto relative border border-red-500/30">
+                        <div class="w-16 h-16 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 shadow-inner animate-pulse">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-white text-center mb-2">Are you absolutely sure?</h3>
+                        <p class="text-[13px] text-slate-400 text-center mb-4 leading-relaxed">This action is <b>irreversible</b>. All your files, media, and profile data will be permanently wiped from the cloud. Enter your password to proceed.</p>
+                        <input type="password" id="deleteAccPasswordInput" placeholder="Enter your password" class="w-full bg-slate-900 border border-red-500/50 text-white px-4 py-3 rounded-xl focus:outline-none focus:border-red-500 transition mb-6">
+                        <div class="flex flex-col gap-3">
+                            <button onclick="confirmDeleteAccount()" id="btnConfirmDeleteAcc" disabled class="w-full bg-red-600 hover:bg-red-500 disabled:bg-red-900/50 disabled:text-red-400/50 disabled:cursor-not-allowed py-3.5 rounded-xl font-bold text-white transition shadow-lg shadow-red-500/20 active:scale-95 flex items-center justify-center gap-2">Wait 3s...</button>
+                            <!-- 🚨 Cancel বাটনে ID এবং Disabled স্টাইল যুক্ত করা হলো -->
+                            <button id="btnCancelDeleteAcc" onclick="closeDeleteAccountModal()" class="w-full py-3.5 rounded-xl font-semibold text-slate-300 bg-slate-700 hover:bg-slate-600 transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">Cancel</button>
+                        </div>
                     </div>
                 </div>
 
@@ -471,6 +811,22 @@
             <div class="fixed bottom-20 w-full max-w-full md:max-w-[800px] flex justify-end px-6 pointer-events-none z-50">
                 <button onclick="openAddMenu()" id="nav-upload" class="w-14 h-14 bg-blue-600 hover:bg-blue-500 rounded-full flex items-center justify-center text-white shadow-[0_10px_20px_rgba(37,99,235,0.4)] active:scale-90 transition-all duration-200 border border-blue-400 pointer-events-auto">
                     <i class="fa-solid fa-plus text-2xl"></i>
+                </button>
+            </div>
+
+            <!-- SELECTION BOTTOM ACTION BAR -->
+            <div id="selectionBottomBar" class="glass-bottom-nav fixed bottom-0 w-full max-w-full md:max-w-[800px] z-[60] px-6 py-3 flex justify-between items-center rounded-t-3xl md:rounded-none transition-transform duration-300 translate-y-full shadow-[0_-20px_40px_rgba(0,0,0,0.5)]">
+                <button onclick="multiDownload()" class="flex flex-col items-center gap-1 text-slate-300 hover:text-blue-400 transition flex-1">
+                    <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center"><i class="fa-solid fa-download"></i></div>
+                    <span class="text-[10px] font-semibold">Download</span>
+                </button>
+                <button onclick="openMultiMoveMenu()" class="flex flex-col items-center gap-1 text-slate-300 hover:text-green-400 transition flex-1">
+                    <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center"><i class="fa-solid fa-folder-tree"></i></div>
+                    <span class="text-[10px] font-semibold">Move</span>
+                </button>
+                <button onclick="multiDelete()" class="flex flex-col items-center gap-1 text-slate-300 hover:text-red-400 transition flex-1">
+                    <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center"><i class="fa-solid fa-trash-can"></i></div>
+                    <span class="text-[10px] font-semibold">Delete</span>
                 </button>
             </div>
 
@@ -511,64 +867,712 @@
         const db = firebase.database();
         let currentUser = null;
 
-        // 2. Auth State Listener (with Splash Screen Fix)
-        auth.onAuthStateChanged((user) => {
-            let splash = document.getElementById('splashScreen');
-            if(splash) {
-                splash.classList.add('opacity-0');
-                setTimeout(() => splash.classList.add('hidden'), 300);
-            }
+        // --- MAINTENANCE MODE GLOBAL LISTENER (Graceful Shutdown) ---
+        let userMaintenanceInterval = null;
+        let gracefulInterval = null;
+        window.isMaintenanceLoaded = false; // UI FLICKER FIX: Flag to hold splash screen
 
-            if (user) {
-                currentUser = user;
-                document.getElementById('authSection').classList.add('hidden');
-                document.getElementById('appSection').classList.remove('hidden');
-                document.getElementById('userEmailDisplay').innerText = user.email;
+        db.ref('system_settings/maintenance_mode').on('value', snap => {
+            window.isMaintenanceLoaded = true; 
+            let data = snap.val() || { status: 'inactive', lock_time: 0, end_time: 0 };
+            
+            let screen = document.getElementById('maintenanceScreen');
+            let timerDisplay = document.getElementById('maintenanceTimerDisplay');
+            let wrapupMsg = document.getElementById('mt-wrapup-msg');
+            let banner = document.getElementById('gracefulBanner');
+            let appMain = document.querySelector('main');
+            let appNav = document.querySelector('.glass-bottom-nav');
+            
+            clearInterval(userMaintenanceInterval);
+            clearInterval(gracefulInterval);
+
+            if (data.status === 'preparing') {
                 
-                // Restore Last Saved Tab & State
-                let lastTab = localStorage.getItem('lastActiveTab') || 'home';
-                let lastCat = localStorage.getItem('lastActiveCategory');
+                // CACHE FIX: Check if the 30s has already passed in real-time!
+                let initialDiff = data.lock_time - Date.now();
+                if (initialDiff <= 0) {
+                    // Lock instantly! Do not show the 30s banner.
+                    document.body.style.overflow = 'hidden';
+                    banner.classList.remove('translate-y-0', 'opacity-100');
+                    banner.classList.add('-translate-y-[150%]', 'opacity-0');
+                    screen.classList.replace('hidden', 'flex');
+                    window.isSystemPreparing = false;
+                    window.isSystemInMaintenance = true;
+                    
+                    let splash = document.getElementById('splashScreen');
+                    if(splash) { splash.classList.add('hidden', 'opacity-0'); }
+
+                    if (data.end_time > 0) {
+                        timerDisplay.classList.remove('hidden');
+                        wrapupMsg.classList.add('hidden');
+                        function updateFallbackTimerUI() {
+                            let diff = data.end_time - Date.now();
+                            if (diff <= 0) {
+                                clearInterval(userMaintenanceInterval);
+                                timerDisplay.classList.add('hidden');
+                                wrapupMsg.classList.remove('hidden');
+                            } else {
+                                let h = Math.floor(diff / (1000 * 60 * 60));
+                                let m = Math.floor((diff / 1000 / 60) % 60);
+                                let s = Math.floor((diff / 1000) % 60);
+                                document.getElementById('mt-hours').innerText = h.toString().padStart(2, '0');
+                                document.getElementById('mt-minutes').innerText = m.toString().padStart(2, '0');
+                                document.getElementById('mt-seconds').innerText = s.toString().padStart(2, '0');
+                            }
+                        }
+                        updateFallbackTimerUI();
+                        userMaintenanceInterval = setInterval(updateFallbackTimerUI, 1000);
+                    }
+                    
+                    if (window.activeUploadsXHR && window.activeUploadsXHR.length > 0) {
+                        window.activeUploadsXHR.forEach(xhr => xhr.abort());
+                        window.activeUploadsXHR = [];
+                    }
+                    uploadQueue = [];
+                    isUploading = false;
+                    
+                    let uploadList = document.getElementById('uploadListContainer');
+                    if(uploadList) uploadList.innerHTML = '';
+                    
+                    return; // Stop further execution
+                }
+
+                // 🚨 PHASE 1: 30 Seconds Graceful Period 🚨
+                window.isSystemPreparing = true;
+                window.isSystemInMaintenance = false;
+
+                // UI/UX FIX: Lock background scrolling
+                document.body.style.overflow = 'hidden';
+
+                // নতুন ক্লিক / ন্যাভিগেশন সম্পূর্ণ ব্লক করে দেওয়া হচ্ছে (CSS Magic)
+                if(appMain) appMain.style.pointerEvents = 'none';
+                if(appNav) appNav.style.pointerEvents = 'none';
+                let navUploadBtn = document.getElementById('nav-upload');
+                if(navUploadBtn) navUploadBtn.classList.add('pointer-events-none', 'opacity-50');
+
+                // ব্যানার শো করানো (Fixed shadow peeking issue)
+                banner.classList.remove('-translate-y-[150%]', 'opacity-0');
+                banner.classList.add('translate-y-0', 'opacity-100');
+
+                // যেকোনো খোলা মেনু জোরপূর্বক ক্লোজ করা (ALL MODALS)
+                closeActionMenu(); closeMoveMenu(); closeAddMenu(); closeSelectionMode();
+                if (typeof closeDeleteAccountModal === 'function') closeDeleteAccountModal();
+                if (typeof closeCreateFolderModal === 'function') closeCreateFolderModal();
+                if (typeof closeRenameModal === 'function') closeRenameModal();
+                if (typeof closeChangePasswordModal === 'function') closeChangePasswordModal();
+                if (typeof closeEditNameModal === 'function') closeEditNameModal();
+
+                // UI FIX: Instantly show correct progress before interval starts
+                document.getElementById('gracefulSeconds').innerText = Math.ceil(initialDiff / 1000);
+                document.getElementById('gracefulProgressBar').style.width = `${Math.min(100, Math.max(0, (initialDiff / 30000) * 100))}%`;
+
+                gracefulInterval = setInterval(() => {
+                    let diff = data.lock_time - Date.now();
+                    let secondsLeft = Math.ceil(diff / 1000);
+                    
+                    if (secondsLeft <= 0) {
+                        secondsLeft = 0;
+                        clearInterval(gracefulInterval);
+                        
+                        // LOGICAL FIX: Fallback to local active lock if Admin went offline
+                        document.body.style.overflow = 'hidden';
+                        banner.classList.remove('translate-y-0', 'opacity-100');
+                        banner.classList.add('-translate-y-[150%]', 'opacity-0');
+                        screen.classList.replace('hidden', 'flex');
+                        window.isSystemPreparing = false;
+                        window.isSystemInMaintenance = true;
+
+                        // UI FIX: Start Timer immediately in Fallback mode to avoid 00:00:00
+                        if (data.end_time > 0) {
+                            timerDisplay.classList.remove('hidden');
+                            wrapupMsg.classList.add('hidden');
+                            function updateFallbackTimerUI() {
+                                let diff = data.end_time - Date.now();
+                                if (diff <= 0) {
+                                    clearInterval(userMaintenanceInterval);
+                                    timerDisplay.classList.add('hidden');
+                                    wrapupMsg.classList.remove('hidden');
+                                } else {
+                                    let h = Math.floor(diff / (1000 * 60 * 60));
+                                    let m = Math.floor((diff / 1000 / 60) % 60);
+                                    let s = Math.floor((diff / 1000) % 60);
+                                    document.getElementById('mt-hours').innerText = h.toString().padStart(2, '0');
+                                    document.getElementById('mt-minutes').innerText = m.toString().padStart(2, '0');
+                                    document.getElementById('mt-seconds').innerText = s.toString().padStart(2, '0');
+                                }
+                            }
+                            updateFallbackTimerUI(); // Call instantly
+                            userMaintenanceInterval = setInterval(updateFallbackTimerUI, 1000);
+                        }
+                        
+                        if (window.activeUploadsXHR && window.activeUploadsXHR.length > 0) {
+                            window.activeUploadsXHR.forEach(xhr => xhr.abort());
+                            window.activeUploadsXHR = [];
+                        }
+                        uploadQueue = [];
+                        isUploading = false;
+                        
+                        // UI FIX: Clean lingering upload cards
+                        let uploadList = document.getElementById('uploadListContainer');
+                        if(uploadList) uploadList.innerHTML = '';
+                    }
+                    
+                    document.getElementById('gracefulSeconds').innerText = secondsLeft;
+                    let progressWidth = Math.min(100, Math.max(0, (secondsLeft / 30) * 100)); // Prevent UI overflow
+                    document.getElementById('gracefulProgressBar').style.width = `${progressWidth}%`;
+                }, 1000);
+
+            } else if (data.status === 'active') {
+                // 🚨 PHASE 2: Full System Lockdown (The Kill Switch) 🚨
+                window.isSystemPreparing = false;
+                window.isSystemInMaintenance = true;
                 
-                // Initialize Base History State
-                history.replaceState({ view: 'tab', tabName: lastTab }, "", "#" + lastTab);
+                // UI/UX FIX: Ensure background is locked
+                document.body.style.overflow = 'hidden';
+
+                banner.classList.remove('translate-y-0', 'opacity-100'); // ব্যানার হাইড
+                banner.classList.add('-translate-y-[150%]', 'opacity-0');
+                screen.classList.replace('hidden', 'flex'); // ফুল-স্ক্রিন লক শো
+
+                // UI FIX: Instantly hide Splash Screen to prevent overlap flicker
+                let splash = document.getElementById('splashScreen');
+                if(splash) { splash.classList.add('hidden', 'opacity-0'); }
+
+                // 🚨 KILL ALL UPLOADS: যে কাজগুলো ৩০ সেকেন্ডে শেষ হয়নি সেগুলো ধ্বংস করা
+                if (window.activeUploadsXHR && window.activeUploadsXHR.length > 0) {
+                    window.activeUploadsXHR.forEach(xhr => xhr.abort());
+                    window.activeUploadsXHR = [];
+                }
+                uploadQueue = [];
+                isUploading = false;
                 
-                showTab(lastTab, false);
-                // We load files realtime, and once it finishes, we will open the category if needed.
-                loadFilesRealtime(lastCat); 
+                // UI FIX: Clear the upload UI cards so they don't stay stuck behind the lock
+                let uploadList = document.getElementById('uploadListContainer');
+                if(uploadList) uploadList.innerHTML = '';
+                
+                // মেইনটেন্যান্স টাইমার আপডেট
+                if (data.end_time > 0) {
+                    timerDisplay.classList.remove('hidden');
+                    wrapupMsg.classList.add('hidden');
+                    
+                    // UI FIX: Call Timer instantly so it never shows 00:00:00 initially
+                    function updateMainTimerUI() {
+                        let diff = data.end_time - Date.now();
+                        if (diff <= 0) {
+                            clearInterval(userMaintenanceInterval);
+                            timerDisplay.classList.add('hidden');
+                            wrapupMsg.classList.remove('hidden');
+                        } else {
+                            let h = Math.floor(diff / (1000 * 60 * 60));
+                            let m = Math.floor((diff / 1000 / 60) % 60);
+                            let s = Math.floor((diff / 1000) % 60);
+                            document.getElementById('mt-hours').innerText = h.toString().padStart(2, '0');
+                            document.getElementById('mt-minutes').innerText = m.toString().padStart(2, '0');
+                            document.getElementById('mt-seconds').innerText = s.toString().padStart(2, '0');
+                        }
+                    }
+                    updateMainTimerUI(); // Call instantly
+                    userMaintenanceInterval = setInterval(updateMainTimerUI, 1000); // Loop every second
+                } else {
+                    timerDisplay.classList.add('hidden');
+                    wrapupMsg.classList.add('hidden');
+                }
             } else {
-                currentUser = null;
-                document.getElementById('appSection').classList.add('hidden');
-                document.getElementById('authSection').classList.remove('hidden');
-                document.getElementById('authSection').classList.add('flex');
+                // 🚨 PHASE 3: Normal State (Inactive) 🚨
+                window.isSystemPreparing = false;
+                window.isSystemInMaintenance = false;
+                
+                // UI/UX FIX: Restore background scrolling
+                document.body.style.overflow = '';
+
+                banner.classList.remove('translate-y-0', 'opacity-100');
+                banner.classList.add('-translate-y-[150%]', 'opacity-0');
+                screen.classList.replace('flex', 'hidden');
+                
+                if(appMain) appMain.style.pointerEvents = 'auto';
+                if(appNav) appNav.style.pointerEvents = 'auto';
+                let navUpload = document.getElementById('nav-upload');
+                if(navUpload) navUpload.classList.remove('pointer-events-none', 'opacity-50');
             }
         });
 
-        // 3. Auth Functions
+        // 2. Auth State Listener (with UI Leak Fix)
+        auth.onAuthStateChanged((user) => {
+            let splash = document.getElementById('splashScreen');
+
+            if (user) {
+                // ইউজার লগইন করেছে, কিন্তু ডাটাবেস চেক না হওয়া পর্যন্ত অ্যাপ UI শো করবো না।
+                // Splash স্ক্রিন চলতে থাকবে।
+                if(splash) {
+                    splash.classList.remove('hidden');
+                    splash.classList.remove('opacity-0');
+                }
+
+                // প্রফেশনাল 'Presence System' (Live Tracking) - ইউজার বের হয়ে গেলে অটোমেটিক অফলাইন হয়ে যাবে
+                let connectedRef = db.ref('.info/connected');
+                let onlineRef = db.ref(`users/${user.uid}/account_info/is_online`);
+                let lastActiveRef = db.ref(`users/${user.uid}/account_info/last_active`);
+
+                window.isAccountDeleted = false;
+                window.presenceInterval = window.presenceInterval || null;
+
+                connectedRef.on('value', (snap) => {
+                    if (window.isAccountDeleted) return; // অ্যাকাউন্ট ডিলিট হলে ট্র্যাকিং বন্ধ
+                    
+                    if (snap.val() === true) {
+                        onlineRef.onDisconnect().set(false);
+                        lastActiveRef.onDisconnect().set(firebase.database.ServerValue.TIMESTAMP);
+
+                        onlineRef.set(true);
+                        lastActiveRef.set(firebase.database.ServerValue.TIMESTAMP);
+
+                        // হার্টবিট: ইউজার অ্যাপে থাকলে প্রতি ১ মিনিট পর পর টাইম আপডেট করবে
+                        if(window.presenceInterval) clearInterval(window.presenceInterval);
+                        window.presenceInterval = setInterval(() => {
+                            if (!window.isAccountDeleted) {
+                                lastActiveRef.set(firebase.database.ServerValue.TIMESTAMP);
+                            }
+                        }, 60000); 
+                    } else {
+                        if(window.presenceInterval) clearInterval(window.presenceInterval);
+                    }
+                });
+
+                // ইউজার ট্যাব চেঞ্জ বা মিনিমাইজ করলে সাথে সাথে টাইম আপডেট করা
+                document.addEventListener('visibilitychange', () => {
+                    if (window.isAccountDeleted) return; // অ্যাকাউন্ট ডিলিট হলে ট্র্যাকিং বন্ধ
+                    if (document.visibilityState === 'visible' && currentUser) {
+                        onlineRef.set(true);
+                        lastActiveRef.set(firebase.database.ServerValue.TIMESTAMP);
+                    } else if (document.visibilityState === 'hidden' && currentUser) {
+                        lastActiveRef.set(firebase.database.ServerValue.TIMESTAMP);
+                    }
+                });
+
+                db.ref(`users/${user.uid}/account_info`).on('value', (snap) => {
+                    // Ghost Fix: ডিলিট হওয়ার সময় ডাটা মুছে গেলে যেন আবার নতুন করে তৈরি না করে!
+                    if (window.isAccountDeleted) return; 
+                    
+                    let isBanned = false;
+                    let accName = "Unknown User";
+                    let profilePic = null;
+                    let joinDate = null;
+
+                    if (!snap.exists()) {
+                        db.ref(`users/${user.uid}/account_info`).set({
+                            name: "Unknown User",
+                            email: user.email,
+                            status: 'active',
+                            created_at: firebase.database.ServerValue.TIMESTAMP
+                        });
+                    } else {
+                        let accInfo = snap.val();
+                        if (accInfo.status === 'banned') {
+                            isBanned = true;
+                        }
+                        accName = accInfo.name || "Unknown User";
+                        profilePic = accInfo.profile_pic || null;
+                        joinDate = accInfo.created_at || null;
+                    }
+
+                    if (isBanned) {
+                        auth.signOut();
+                        alert("🚫 Access Denied!\nYour account has been suspended by the Administrator.");
+                        if(splash) {
+                            splash.classList.add('opacity-0');
+                            setTimeout(() => splash.classList.add('hidden'), 300);
+                        }
+                        return; 
+                    }
+
+                    // ইউজার অ্যাক্টিভ। এবার অ্যাপ UI শো করবো।
+                    let nameDisp = document.getElementById('userNameDisplay');
+                    if(nameDisp) nameDisp.innerText = accName;
+
+                    // প্রোফাইল পিকচার আপডেট করা
+                    let avatarDiv = document.getElementById('profileAvatar');
+                    if(avatarDiv) {
+                        if(profilePic) {
+                            avatarDiv.innerHTML = `<img src="${profilePic}" class="w-full h-full object-cover">`;
+                        } else {
+                            avatarDiv.innerHTML = `<i class="fa-solid fa-user"></i>`;
+                        }
+                    }
+
+                    // Join Date আপডেট করা
+                    let joinDateElem = document.getElementById('profileJoinDate');
+                    if(joinDateElem) {
+                        if(joinDate) {
+                            let jd = new Date(joinDate);
+                            joinDateElem.innerText = jd.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                        } else {
+                            joinDateElem.innerText = 'Unknown';
+                        }
+                    }
+
+                    currentUser = user;
+
+                    // UI FLICKER FIX: Wait for Maintenance state before hiding Splash Screen
+                    let waitForMaintenance = setInterval(() => {
+                        if (window.isMaintenanceLoaded) {
+                            clearInterval(waitForMaintenance);
+
+                            document.getElementById('authSection').classList.add('hidden');
+                            document.getElementById('appSection').classList.remove('hidden');
+                            document.getElementById('userEmailDisplay').innerText = user.email;
+                            
+                            setBtnLoading('loginBtn', false, "Sign In");
+                            setBtnLoading('signupBtn', false, "Create Account");
+
+                            let lastTab = localStorage.getItem('lastActiveTab') || 'home';
+                            let lastCat = localStorage.getItem('lastActiveCategory');
+                            
+                            history.replaceState({ view: 'tab', tabName: lastTab }, "", "#" + lastTab);
+                            showTab(lastTab, false);
+                            loadFilesRealtime(lastCat); 
+
+                            // CACHE FLICKER FIX: Delay Splash screen removal by 600ms to allow Live data to overwrite Local Cache
+                            setTimeout(() => {
+                                if(splash) {
+                                    splash.classList.add('opacity-0');
+                                    setTimeout(() => splash.classList.add('hidden'), 300);
+                                }
+                            }, 600);
+                        }
+                    }, 50); // Check every 50ms
+                });
+            } else {
+                // ইউজার লগআউট অবস্থায় আছে
+                let waitForMaintenanceOut = setInterval(() => {
+                    if (window.isMaintenanceLoaded) {
+                        clearInterval(waitForMaintenanceOut);
+                        
+                        // CACHE FLICKER FIX
+                        setTimeout(() => {
+                            if(splash) {
+                                splash.classList.add('opacity-0');
+                                setTimeout(() => splash.classList.add('hidden'), 300);
+                            }
+                        }, 600);
+                        
+                        currentUser = null;
+                        document.getElementById('appSection').classList.add('hidden');
+                        document.getElementById('authSection').classList.remove('hidden');
+                        document.getElementById('authSection').classList.add('flex');
+                        
+                        // লগআউট অবস্থায় সমস্ত বাটনের লোডিং স্ট্যাটাস রিসেট করা
+                        setBtnLoading('loginBtn', false, "Sign In");
+                        setBtnLoading('signupBtn', false, "Create Account");
+                    }
+                }, 50);
+            }
+        });
+
+
+
+
+
+
+
+
+
+
+
+
+
+        // 3. Auth Functions (Advanced UI/UX Logic)
+        
+        // Mode Switcher (Login -> Signup -> Forgot)
+        function switchAuthMode(mode) {
+            hideAuthAlert();
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('signupForm').classList.add('hidden');
+            document.getElementById('forgotForm').classList.add('hidden');
+            
+            let title = document.getElementById('authTitle');
+            let subtitle = document.getElementById('authSubtitle');
+
+            if (mode === 'login') {
+                title.innerText = "Welcome Back";
+                subtitle.innerText = "Enter your details to access your cloud";
+                document.getElementById('loginForm').classList.remove('hidden');
+                document.getElementById('loginForm').classList.add('fade-in');
+            } else if (mode === 'signup') {
+                title.innerText = "Create Account";
+                subtitle.innerText = "Join us to get unlimited secure storage";
+                document.getElementById('signupForm').classList.remove('hidden');
+                document.getElementById('signupForm').classList.add('fade-in');
+            } else if (mode === 'forgot') {
+                title.innerText = "Reset Password";
+                subtitle.innerText = "Don't worry, it happens to the best of us";
+                document.getElementById('forgotForm').classList.remove('hidden');
+                document.getElementById('forgotForm').classList.add('fade-in');
+                // Auto-fill email if typed in login
+                let currentEmail = document.getElementById('loginEmail').value;
+                if(currentEmail) document.getElementById('forgotEmail').value = currentEmail;
+            }
+        }
+
+        // Show/Hide Password Toggle
+        function togglePassword(inputId, iconId) {
+            let input = document.getElementById(inputId);
+            let icon = document.getElementById(iconId);
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+                icon.classList.add('text-blue-400');
+            } else {
+                input.type = "password";
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+                icon.classList.remove('text-blue-400');
+            }
+        }
+
+        // Alert & Loading Handlers
+        function showAuthAlert(msg, isSuccess = false) {
+            let box = document.getElementById('authAlertBox');
+            let text = document.getElementById('authAlertText');
+            let icon = document.getElementById('authAlertIcon');
+            let card = document.getElementById('authCard');
+            
+            box.classList.remove('hidden', 'bg-red-500/10', 'text-red-400', 'bg-green-500/10', 'text-green-400');
+            box.classList.add('flex');
+            text.innerText = msg;
+            
+            if (isSuccess) {
+                box.classList.add('bg-green-500/10', 'text-green-400');
+                icon.className = "fa-solid fa-circle-check text-lg";
+            } else {
+                box.classList.add('bg-red-500/10', 'text-red-400');
+                icon.className = "fa-solid fa-circle-exclamation text-lg";
+                // Shake Animation
+                card.classList.remove('error-shake');
+                void card.offsetWidth; // Trigger reflow
+                card.classList.add('error-shake');
+            }
+        }
+
+        function hideAuthAlert() {
+            document.getElementById('authAlertBox').classList.add('hidden');
+        }
+
+        function setBtnLoading(btnId, isLoading, originalText) {
+            let btn = document.getElementById(btnId);
+            if (isLoading) {
+                btn.disabled = true;
+                btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin text-lg"></i> Processing...`;
+                btn.classList.add('opacity-80', 'cursor-not-allowed');
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                btn.classList.remove('opacity-80', 'cursor-not-allowed');
+            }
+        }
+
+        // Friendly Error Message Handler (Hides Firebase identity)
+        function getFriendlyError(err) {
+            switch (err.code) {
+                case 'auth/too-many-requests': return "Too many failed attempts. Please try again later.";
+                case 'auth/wrong-password':
+                case 'auth/invalid-credential': return "Invalid email or password.";
+                case 'auth/user-not-found': return "No account found with this email.";
+                case 'auth/email-already-in-use': return "This email is already registered.";
+                case 'auth/weak-password': return "Password is too weak (minimum 6 characters).";
+                case 'auth/network-request-failed': return "Network error. Please check your connection.";
+                case 'auth/invalid-email': return "Please enter a valid email address.";
+                default: return "An unexpected error occurred. Please try again.";
+            }
+        }
+
+        // Authentication Main Functions
         function register() {
-            let email = document.getElementById('email').value;
-            let pass = document.getElementById('password').value;
-            if(!email || !pass) { document.getElementById('authError').innerText = "Enter email and password"; return; }
-            auth.createUserWithEmailAndPassword(email, pass).catch(err => {
-                document.getElementById('authError').innerText = err.message;
+            let name = document.getElementById('signupName').value.trim();
+            let email = document.getElementById('signupEmail').value.trim();
+            let pass = document.getElementById('signupPassword').value.trim();
+            
+            if(!name || !email || !pass) { showAuthAlert("Please fill in all fields."); return; }
+            if(pass.length < 6) { showAuthAlert("Password must be at least 6 characters."); return; }
+            
+            setBtnLoading('signupBtn', true, "Create Account");
+            auth.createUserWithEmailAndPassword(email, pass).then((userCredential) => {
+                db.ref(`users/${userCredential.user.uid}/account_info`).set({
+                    name: name,
+                    email: email,
+                    status: 'active',
+                    created_at: firebase.database.ServerValue.TIMESTAMP
+                }).then(() => {
+                    setBtnLoading('signupBtn', false, "Create Account");
+                }).catch(err => setBtnLoading('signupBtn', false, "Create Account"));
+            }).catch(err => {
+                setBtnLoading('signupBtn', false, "Create Account");
+                showAuthAlert(getFriendlyError(err));
             });
         }
+
         function login() {
-            let email = document.getElementById('email').value;
-            let pass = document.getElementById('password').value;
-            if(!email || !pass) { document.getElementById('authError').innerText = "Enter email and password"; return; }
-            auth.signInWithEmailAndPassword(email, pass).catch(err => {
-                document.getElementById('authError').innerText = err.message;
+            let email = document.getElementById('loginEmail').value.trim();
+            let pass = document.getElementById('loginPassword').value.trim();
+            if(!email || !pass) { showAuthAlert("Enter your email and password."); return; }
+            
+            setBtnLoading('loginBtn', true, "Sign In");
+            auth.signInWithEmailAndPassword(email, pass).then(() => {
+                setBtnLoading('loginBtn', false, "Sign In");
+            }).catch(err => {
+                setBtnLoading('loginBtn', false, "Sign In");
+                showAuthAlert(getFriendlyError(err));
             });
         }
+
+        function resetPassword() {
+            let email = document.getElementById('forgotEmail').value.trim();
+            if(!email) { showAuthAlert("Please enter your registered email."); return; }
+            
+            setBtnLoading('forgotBtn', true, "Send Reset Link");
+            
+            auth.fetchSignInMethodsForEmail(email).then((methods) => {
+                if (methods.length === 0) {
+                    setBtnLoading('forgotBtn', false, "Send Reset Link");
+                    showAuthAlert("No account found with this email address.");
+                    return;
+                }
+                auth.sendPasswordResetEmail(email).then(() => {
+                    setBtnLoading('forgotBtn', false, "Send Reset Link");
+                    showAuthAlert("Reset link sent! Please check your inbox.", true);
+                    setTimeout(() => {
+                        document.getElementById('loginEmail').value = email;
+                        document.getElementById('loginPassword').value = ''; 
+                        switchAuthMode('login');
+                    }, 3000);
+                }).catch(err => {
+                    setBtnLoading('forgotBtn', false, "Send Reset Link");
+                    showAuthAlert(getFriendlyError(err));
+                });
+            }).catch(err => {
+                setBtnLoading('forgotBtn', false, "Send Reset Link");
+                showAuthAlert(getFriendlyError(err));
+            });
+        }
+
         function logout() { auth.signOut(); }
 
         // 4. UI Navigation & View Mode Settings
-        const TOTAL_STORAGE_LIMIT = 25 * 1024 * 1024 * 1024; // 25 GB in Bytes
-        let allUserFilesGlobal = []; 
-        let allUserFoldersGlobal = []; // ফোল্ডার ডেটা স্টোর করার জন্য
+        let TOTAL_STORAGE_LIMIT = parseFloat(localStorage.getItem('cachedStorageLimit')) || (25 * 1024 * 1024 * 1024); // LocalCache or Default 25 GB
+        let CURRENT_TOTAL_USAGE = 0; // বর্তমান স্টোরেজ ট্র্যাকিং
+        let allUserFilesGlobal =[]; 
+
+        // 🚨 Dynamic Storage Limit Fetcher & UI Locker
+        db.ref('system_settings/global_storage_limit').on('value', snap => {
+            if(snap.exists()) {
+                TOTAL_STORAGE_LIMIT = snap.val();
+                localStorage.setItem('cachedStorageLimit', TOTAL_STORAGE_LIMIT); // Save for next reload without flash
+                if(currentUser) updateStorageUI(CURRENT_TOTAL_USAGE); // রিয়েলটাইমে UI আপডেট
+            }
+        });
+
+        // 🚨 Dynamic Max Upload File Size Fetcher
+        let MAX_UPLOAD_FILE_SIZE = 500 * 1024 * 1024; // Default 500 MB
+        db.ref('system_settings/max_file_size').on('value', snap => {
+            if(snap.exists()) {
+                MAX_UPLOAD_FILE_SIZE = snap.val();
+            }
+        });
+
+        // 🚨 Smart Upload Click Handler (বক্স ডিজেবল করার লজিক)
+        function handleUploadClick() {
+            if (CURRENT_TOTAL_USAGE >= TOTAL_STORAGE_LIMIT) {
+                showToast("⚠️ Storage Limit Exceeded! Delete files to upload.");
+                setTimeout(hideToast, 4000);
+                return;
+            }
+            document.getElementById('fileInput').click();
+        }
+
+        // 🎨 Smart UI Capper (১০০% এর বেশি হলে গোল বার ফাটবে না, লাল হয়ে যাবে)
+        function updateStorageUI(totalSize) {
+            CURRENT_TOTAL_USAGE = totalSize;
+            let percentRaw = (totalSize / TOTAL_STORAGE_LIMIT) * 100;
+            let percentDisplay = percentRaw > 100 ? 100 : percentRaw; // Capping at 100%
+            
+            let circle = document.getElementById('storageProgress');
+            let textElem = document.getElementById('storagePercentage');
+            let uploadBoxOuter = document.getElementById('uploadBoxWrapper');
+            let uploadBoxGlow = document.getElementById('uploadBoxGlow');
+            let uploadBoxInner = document.getElementById('uploadBoxInner');
+            let uploadBoxIconBg = document.getElementById('uploadBoxIconBg');
+            let uploadBoxIcon = document.getElementById('uploadBoxIcon');
+            let uploadBoxTextTitle = document.getElementById('uploadBoxTextTitle');
+            let uploadBoxTextSub = document.getElementById('uploadBoxTextSub');
+
+            // Header Texts
+            let usedElem = document.getElementById('usedStorageText');
+            if(usedElem && usedElem.parentNode) {
+                usedElem.parentNode.innerHTML = `<div class="w-2 h-2 rounded-full bg-blue-500"></div><span id="usedStorageText" class="${percentRaw >= 100 ? 'text-red-400 font-bold' : ''}">${formatBytes(totalSize)}</span> <span class="text-slate-500">| Total: ${formatBytes(TOTAL_STORAGE_LIMIT)}</span>`;
+            }
+            
+            let remainingText = document.getElementById('remainingStorageText');
+            if(remainingText) {
+                remainingText.innerText = percentRaw >= 100 ? "Limit Exceeded!" : `Remaining: ${formatBytes(TOTAL_STORAGE_LIMIT - totalSize)}`;
+                remainingText.className = percentRaw >= 100 ? "text-red-400 font-bold text-xs" : "";
+            }
+
+            // Circular Progress & Upload Box Colors
+            if (circle && textElem) {
+                textElem.innerText = `${percentDisplay.toFixed(2)}%`;
+                
+                if (percentRaw >= 100) {
+                    circle.style.background = `conic-gradient(#ef4444 ${percentDisplay * 3.6}deg, #1e293b 0deg)`; // Red Alert
+                    textElem.classList.replace('text-white', 'text-red-400');
+                    
+                    // Box Locked Mode
+                    if (uploadBoxOuter) {
+                        uploadBoxOuter.classList.add('opacity-80');
+                        uploadBoxGlow.classList.replace('bg-blue-500', 'bg-red-500');
+                        uploadBoxInner.classList.replace('border-slate-600', 'border-red-500/30');
+                        uploadBoxInner.classList.remove('active:bg-slate-700');
+                        uploadBoxInner.classList.add('bg-red-900/10');
+                        uploadBoxIconBg.classList.replace('text-blue-400', 'text-red-400');
+                        uploadBoxIconBg.classList.add('bg-red-500/10');
+                        uploadBoxIcon.className = "fa-solid fa-ban text-2xl";
+                        uploadBoxTextTitle.innerText = "Storage Full";
+                        uploadBoxTextTitle.classList.replace('text-blue-400', 'text-red-400');
+                        uploadBoxTextSub.innerText = "Delete files to continue";
+                        uploadBoxTextSub.classList.replace('text-slate-500', 'text-red-400/80');
+                    }
+                } else {
+                    circle.style.background = `conic-gradient(#3b82f6 ${percentDisplay * 3.6}deg, #1e293b 0deg)`; // Normal Blue
+                    textElem.classList.replace('text-red-400', 'text-white');
+                    
+                    // Box Normal Mode
+                    if (uploadBoxOuter) {
+                        uploadBoxOuter.classList.remove('opacity-80');
+                        uploadBoxGlow.classList.replace('bg-red-500', 'bg-blue-500');
+                        uploadBoxInner.classList.replace('border-red-500/30', 'border-slate-600');
+                        uploadBoxInner.classList.remove('bg-red-900/10');
+                        uploadBoxInner.classList.add('active:bg-slate-700');
+                        uploadBoxIconBg.classList.replace('text-red-400', 'text-blue-400');
+                        uploadBoxIconBg.classList.remove('bg-red-500/10');
+                        uploadBoxIcon.className = "fa-solid fa-arrow-up-from-bracket text-2xl";
+                        uploadBoxTextTitle.innerText = "Tap to Browse";
+                        uploadBoxTextTitle.classList.replace('text-red-400', 'text-blue-400');
+                        uploadBoxTextSub.innerText = "Files, Photos, Videos";
+                        uploadBoxTextSub.classList.replace('text-red-400/80', 'text-slate-500');
+                    }
+                }
+            }
+        } 
+        let allUserFoldersGlobal = []; 
+        let allTrashedFilesGlobal =[];
+        let allTrashedFoldersGlobal =[];
+        const TRASH_EXPIRY_MS = 30 * 24 * 60 * 60 * 1000; // 30 Days in MS
         let currentFolderId = 'root'; 
         let currentFolderName = 'All Files';
         let currentViewMode = localStorage.getItem('viewMode') || 'list';
+        
+        // Multi-Select Variables
+        let isSelectionMode = false;
+        let selectedItems = []; // Format: { key: '...', type: 'file/folder' }
+        let longPressTimer;
+        let ignoreNextPopState = false; // পেজ জাম্প হওয়া ঠেকানোর জন্য
 
         // --- Move System Variables ---
         let moveItemId = null;
@@ -638,9 +1642,16 @@
             let recentContainer = document.getElementById('recentFileListHome');
             setContainerLayout('recentFileListHome');
             recentContainer.innerHTML = '';
-            let recentFiles = allUserFilesGlobal.slice(0, 10);
-            if(recentFiles.length === 0) recentContainer.innerHTML = `<p class="text-center text-slate-500 py-4 text-sm col-span-full">No recent files.</p>`;
-            else recentFiles.forEach(f => recentContainer.innerHTML += generateFileCard(f));
+            let recentFiles = allUserFilesGlobal.slice(0, 6);
+            if(recentFiles.length === 0) {
+                recentContainer.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-6 col-span-full opacity-60">
+                    <i class="fa-solid fa-clock-rotate-left text-3xl text-slate-500 mb-2"></i>
+                    <p class="text-center text-slate-400 text-sm font-semibold">No recent file here</p>
+                </div>`;
+            } else {
+                recentFiles.forEach(f => recentContainer.innerHTML += generateFileCard(f));
+            }
 
             // Files Tab (Current Folder & Files)
             let mainList = document.getElementById('fileList');
@@ -690,7 +1701,8 @@
                 if(searchDiv && !searchDiv.classList.contains('opacity-0')) toggleSearch(target);
             });
 
-            ['home', 'files', 'upload', 'profile', 'category'].forEach(id => {
+            // Hide all tabs
+            ['home', 'files', 'upload', 'profile', 'category', 'trash'].forEach(id => {
                 let el = document.getElementById(id + 'Tab');
                 if(el) el.classList.add('hidden');
             });
@@ -698,7 +1710,7 @@
             document.getElementById(tab + 'Tab').classList.remove('hidden');
 
             let fab = document.getElementById('nav-upload');
-            if(tab === 'upload' || tab === 'category') {
+            if(tab === 'upload' || tab === 'category' || tab === 'trash') {
                 fab.classList.add('scale-0', 'opacity-0', 'pointer-events-none');
             } else {
                 fab.classList.remove('scale-0', 'opacity-0', 'pointer-events-none');
@@ -712,8 +1724,8 @@
             else if(tab === 'files') document.getElementById('nav-files').classList.replace('text-slate-500', 'text-blue-500');
             else if(tab === 'profile') document.getElementById('nav-profile').classList.replace('text-slate-500', 'text-blue-500');
             
-            // Save Last Active Tab (Unless it's a dynamic category)
-            if(tab !== 'category') {
+            // Save Last Active Tab (Unless it's a dynamic category or trash)
+            if(tab !== 'category' && tab !== 'trash') {
                 localStorage.setItem('lastActiveTab', tab);
                 localStorage.removeItem('lastActiveCategory'); // Clear category state if switching main tabs
             }
@@ -724,6 +1736,60 @@
         // 5. Multi-Upload System with Queue
         let uploadQueue =[];
         let isUploading = false;
+        let isDeletingAccount = false; // 🚨 ডিলিট প্রসেসিং ট্র্যাক করার জন্য নতুন ভেরিয়েবল
+        let wakeLock = null; // স্ক্রিন অন রাখার জন্য
+        window.activeUploadsXHR =[]; // 🚨 চলমান আপলোড ট্র্যাক করার জন্য
+        window.isSystemPreparing = false; // 🚨 ৩০ সেকেন্ডের ফেজ ট্র্যাক করার জন্য
+
+        // Screen Wake Lock Function
+        async function requestWakeLock() {
+            if ('wakeLock' in navigator && !wakeLock) {
+                try {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                } catch (err) {
+                    // silently handle wake lock error
+                }
+            }
+        }
+
+        function releaseWakeLock() {
+            if (wakeLock !== null) {
+                wakeLock.release().then(() => {
+                    wakeLock = null;
+                });
+            }
+        }
+
+        // ভুলে ট্যাব কেটে দিলে বা রিফ্রেশ দিলে ওয়ার্নিং
+        window.addEventListener('beforeunload', (e) => {
+            if (isUploading || uploadQueue.length > 0) {
+                e.preventDefault();
+                e.returnValue = 'Uploads are in progress. If you leave, they will be canceled!';
+            }
+            // 🚨 একাউন্ট ডিলিট হওয়ার সময় রিফ্রেশ ঠেকাতে নতুন লজিক
+            if (isDeletingAccount) {
+                e.preventDefault();
+                e.returnValue = 'Account deletion is in progress! Do not close the app.';
+            }
+        });
+
+        let hasShownMinimizeWarning = false; // বারবার ওয়ার্নিং ঠেকাতে ফ্ল্যাগ ব্যবহার
+
+        // মিনিমাইজ করলে ইউজারকে ওয়ার্নিং দেওয়া
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden' && (isUploading || uploadQueue.length > 0)) {
+                sessionStorage.setItem('minimizedDuringUpload', 'true');
+            } else if (document.visibilityState === 'visible' && sessionStorage.getItem('minimizedDuringUpload')) {
+                sessionStorage.removeItem('minimizedDuringUpload');
+                
+                // যদি এই আপলোড সেশনে আগে ওয়ার্নিং না দেখানো হয়ে থাকে, তবেই দেখাবে
+                if (!hasShownMinimizeWarning) {
+                    showToast("⚠️ Please keep the app open to avoid upload failure!");
+                    hasShownMinimizeWarning = true; // ফ্ল্যাগ ট্রু করে দেওয়া হলো
+                    setTimeout(hideToast, 4000);
+                }
+            }
+        });
 
         // Image Thumbnail Generator
         function getThumbnailAsync(file) {
@@ -750,13 +1816,48 @@
         }
 
         document.getElementById('fileInput').addEventListener('change', async function() {
-            let files = this.files;
-            if (files.length === 0) return;
+            let rawFiles = this.files;
+            if (rawFiles.length === 0) return;
+
+            let validFiles = [];
+            let newFilesTotalSize = 0;
+            let skippedFilesCount = 0;
+
+            // 🚨 SMART MAX FILE SIZE CHECK
+            for (let i = 0; i < rawFiles.length; i++) {
+                if (rawFiles[i].size > MAX_UPLOAD_FILE_SIZE) {
+                    skippedFilesCount++;
+                    continue; // ফাইল বড় হলে স্কিপ করে যাবে
+                }
+                validFiles.push(rawFiles[i]);
+                newFilesTotalSize += rawFiles[i].size;
+            }
+
+            // যদি কোনো ফাইল স্কিপ হয়, তবে একটি মাত্র স্মার্ট ওয়ার্নিং দেবে
+            if (skippedFilesCount > 0) {
+                showToast(`⚠️ ${skippedFilesCount} file(s) skipped! Max allowed size is ${formatBytes(MAX_UPLOAD_FILE_SIZE)}.`);
+                setTimeout(hideToast, 5000);
+            }
+
+            // যদি সব ফাইলই বড় হয় এবং রিজেক্ট হয়ে যায়, তাহলে আপলোড প্রসেস বন্ধ
+            if (validFiles.length === 0) {
+                this.value = ''; 
+                return;
+            }
+
+            // 🚨 STRICT OVERALL STORAGE CHECK (টোটাল স্টোরেজ ফুল কি না চেক করবে)
+            if ((CURRENT_TOTAL_USAGE + newFilesTotalSize) > TOTAL_STORAGE_LIMIT) {
+                showToast("⚠️ Storage Full! You don't have enough space.");
+                setTimeout(hideToast, 4000);
+                this.value = ''; 
+                return;
+            }
 
             let uploadListContainer = document.getElementById('uploadListContainer');
 
-            for (let index = 0; index < files.length; index++) {
-                let file = files[index];
+            // শুধুমাত্র ভ্যালিড ফাইলগুলো কিউ-তে অ্যাড করবে
+            for (let index = 0; index < validFiles.length; index++) {
+                let file = validFiles[index];
                 let fileId = 'upload_' + Date.now() + '_' + index;
                 
                 let thumbBase64 = await getThumbnailAsync(file);
@@ -811,7 +1912,18 @@
         });
 
         function processNextUpload() {
-            if (isUploading || uploadQueue.length === 0) return;
+            if (isUploading) return;
+            
+            // যদি কিউতে কিছু না থাকে, তবে স্ক্রিন লক রিলিজ করে দাও
+            if (uploadQueue.length === 0) {
+                releaseWakeLock();
+                hasShownMinimizeWarning = false; // সব আপলোড শেষ, তাই ওয়ার্নিং সিস্টেম রিসেট
+                return;
+            }
+            
+            // আপলোড শুরু হওয়ার সময় স্ক্রিন যেন অফ না হয় তার রিকোয়েস্ট করা
+            requestWakeLock();
+            
             let currentItem = uploadQueue.shift();
             isUploading = true;
             startSingleUpload(currentItem.file, currentItem.card, currentItem.thumbnail);
@@ -842,9 +1954,14 @@
             let formData = new FormData();
             formData.append("file", file);
 
+            let token = await currentUser.getIdToken();
             let xhr = new XMLHttpRequest();
             // API_BASE_URL অ্যাড করা হয়েছে
             xhr.open("POST", API_BASE_URL + "/upload/", true);
+            xhr.setRequestHeader("Authorization", "Bearer " + token);
+            
+            // XHR ট্র্যাকিংয়ে অ্যাড করা হলো (যাতে ৩০ সেকেন্ড পর ফোর্স ক্যানসেল করা যায়)
+            window.activeUploadsXHR.push(xhr);
 
             cancelBtn.onclick = () => {
                 xhr.abort();
@@ -853,9 +1970,8 @@
                 progressBar.classList.replace('bg-blue-500', 'bg-red-500');
                 cancelBtn.classList.add('hidden');
                 
-                isUploading = false;
-                processNextUpload();
                 setTimeout(() => { card.style.display = 'none'; }, 2000);
+                finishUploadTask();
             };
 
             xhr.upload.onprogress = function(event) {
@@ -911,12 +2027,17 @@
             };
 
             xhr.onerror = function() {
-                handleFailedUpload("Network Error!");
+                if(xhr.status === 503) handleFailedUpload("Server Busy!");
+                else handleFailedUpload("Network Error!");
             };
 
             xhr.send(formData);
 
             function finishUploadTask() {
+                // XHR রিমুভ করা হচ্ছে
+                let index = window.activeUploadsXHR.indexOf(xhr);
+                if (index > -1) window.activeUploadsXHR.splice(index, 1);
+                
                 isUploading = false;
                 processNextUpload();
             }
@@ -965,25 +2086,32 @@
             let childFoldersCount = allUserFoldersGlobal.filter(f => f.parent_id === folder.key).length;
             let totalItems = childFilesCount + childFoldersCount;
             let itemText = totalItems === 1 ? '1 Item' : `${totalItems} Items`;
+            
+            let isSelected = selectedItems.some(i => i.key === folder.key && i.type === 'folder');
+            let selClass = isSelected ? 'selected-card' : '';
+            let checkIcon = isSelected ? '<i class="fa-solid fa-circle-check text-blue-500 text-[20px] bg-white rounded-full flex items-center justify-center shadow-md"></i>' : '<div class="w-full h-full border-2 border-slate-400 bg-slate-800 rounded-full shadow-md"></div>';
+            let safeName = folder.folder_name.replace(/'/g, "\\'");
 
             if (currentViewMode === 'grid') {
                 return `
-                <div onclick="openFolder('${folder.key}', '${folder.folder_name}')" class="relative aspect-square bg-slate-800 rounded-xl border border-slate-700 shadow-sm group cursor-pointer active:bg-slate-700 transition flex flex-col items-center justify-center p-2">
+                <div id="card_${folder.key}" oncontextmenu="event.preventDefault();" ontouchstart="startLongPress('${folder.key}', 'folder')" ontouchend="cancelLongPress()" onmousedown="startLongPress('${folder.key}', 'folder')" onmouseup="cancelLongPress()" onmouseleave="cancelLongPress()" onclick="if(isSelectionMode) { toggleSelectItem('${folder.key}', 'folder'); } else { openFolder('${folder.key}', '${safeName}'); }" class="relative aspect-square bg-slate-800 rounded-xl border border-slate-700 shadow-sm group cursor-pointer active:bg-slate-700 transition flex flex-col items-center justify-center p-2 no-select ${selClass}">
+                    <div class="absolute top-2 left-2 w-5 h-5 z-20 select-checkbox ${isSelectionMode ? 'opacity-100' : 'opacity-0'}">${checkIcon}</div>
                     <div class="absolute top-1 right-1 z-20">
-                        <button onclick="event.stopPropagation(); openActionMenu('${folder.key}', true)" class="w-8 h-8 rounded-full bg-transparent flex items-center justify-center text-slate-400 hover:text-white active:bg-slate-700/80 transition">
+                        <button onclick="event.stopPropagation(); openActionMenu('${folder.key}', true)" class="w-8 h-8 rounded-full bg-transparent flex items-center justify-center text-slate-400 hover:text-white active:bg-slate-700/80 transition ${isSelectionMode ? 'hidden' : ''}">
                             <i class="fa-solid fa-ellipsis-vertical text-sm"></i>
                         </button>
                     </div>
-                    <i class="fa-solid fa-folder text-4xl text-blue-400 mb-1 mt-2"></i>
-                    <p class="font-semibold text-white text-xs text-center line-clamp-1 w-full selectable px-1" title="${folder.folder_name}">${folder.folder_name}</p>
-                    <p class="text-[9px] text-slate-400 mt-0.5">${itemText} <span class="mx-0.5">•</span> ${formatDate(folder.timestamp)}</p>
+                    <i class="fa-solid fa-folder text-4xl text-blue-400 mb-1 mt-2 pointer-events-none"></i>
+                    <p class="font-semibold text-white text-xs text-center line-clamp-1 w-full px-1 pointer-events-none selectable" title="${folder.folder_name}">${folder.folder_name}</p>
+                    <p class="text-[9px] text-slate-400 mt-0.5 pointer-events-none">${itemText}</p>
                 </div>`;
             }
 
             return `
-            <div onclick="openFolder('${folder.key}', '${folder.folder_name}')" class="bg-slate-800 p-3 rounded-2xl border border-slate-700 flex justify-between items-center shadow-sm cursor-pointer active:bg-slate-700 transition">
-                <div class="flex items-center overflow-hidden flex-1 mr-3">
-                    <div class="w-12 h-12 bg-blue-500/10 text-blue-400 rounded-xl flex items-center justify-center mr-3 flex-shrink-0">
+            <div id="card_${folder.key}" oncontextmenu="event.preventDefault();" ontouchstart="startLongPress('${folder.key}', 'folder')" ontouchend="cancelLongPress()" onmousedown="startLongPress('${folder.key}', 'folder')" onmouseup="cancelLongPress()" onmouseleave="cancelLongPress()" onclick="if(isSelectionMode) { toggleSelectItem('${folder.key}', 'folder'); } else { openFolder('${folder.key}', '${safeName}'); }" class="bg-slate-800 p-3 rounded-2xl border border-slate-700 flex justify-between items-center shadow-sm cursor-pointer active:bg-slate-700 transition no-select ${selClass}">
+                <div class="flex items-center overflow-hidden flex-1 mr-3 pointer-events-none">
+                    <div class="${isSelectionMode ? 'block' : 'hidden'} w-6 h-6 mr-3 flex-shrink-0 z-20 select-checkbox">${checkIcon}</div>
+                    <div class="w-12 h-12 bg-blue-500/10 text-blue-400 rounded-xl flex items-center justify-center mr-3 flex-shrink-0 relative">
                         <i class="fa-solid fa-folder text-2xl"></i>
                     </div>
                     <div class="overflow-hidden">
@@ -991,7 +2119,7 @@
                         <p class="text-[11px] text-slate-400 mt-0.5">${itemText} <span class="mx-1">•</span> ${formatDate(folder.timestamp)}</p>
                     </div>
                 </div>
-                <div class="relative flex-shrink-0 z-20">
+                <div class="relative flex-shrink-0 z-20 ${isSelectionMode ? 'hidden' : ''}">
                     <button onclick="event.stopPropagation(); openActionMenu('${folder.key}', true)" class="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-700 active:bg-slate-600 hover:text-white transition">
                         <i class="fa-solid fa-ellipsis-vertical text-lg"></i>
                     </button>
@@ -1009,43 +2137,45 @@
             else if(type === 'document') { iconClass = "fa-file-lines"; colorClass = "text-teal-500 bg-teal-500/10"; }
             else { iconClass = "fa-file-zipper"; colorClass = "text-green-500 bg-green-500/10"; }
 
-            let iconHtml = `<i class="fa-solid ${iconClass} text-xl"></i>`;
-            let gridIconHtml = `<div class="w-full h-full flex items-center justify-center ${colorClass}"><i class="fa-solid ${iconClass} text-3xl"></i></div>`;
+            let iconHtml = `<i class="fa-solid ${iconClass} text-xl pointer-events-none"></i>`;
+            let gridIconHtml = `<div class="w-full h-full flex items-center justify-center ${colorClass} pointer-events-none"><i class="fa-solid ${iconClass} text-3xl"></i></div>`;
             
             if (f.thumbnail) {
-                iconHtml = `<img src="${f.thumbnail}" class="w-full h-full object-cover rounded-xl shadow-sm border border-slate-600">`;
-                gridIconHtml = `<img src="${f.thumbnail}" class="w-full h-full object-cover opacity-80">`;
+                iconHtml = `<img src="${f.thumbnail}" class="w-full h-full object-cover rounded-xl shadow-sm border border-slate-600 pointer-events-none">`;
+                gridIconHtml = `<img src="${f.thumbnail}" class="w-full h-full object-cover opacity-80 pointer-events-none">`;
                 colorClass = "bg-transparent"; 
             }
 
-            // --- GRID VIEW CARD ---
+            let isSelected = selectedItems.some(i => i.key === f.key && i.type === 'file');
+            let selClass = isSelected ? 'selected-card' : '';
+            let checkIcon = isSelected ? '<i class="fa-solid fa-circle-check text-blue-500 text-[20px] bg-white rounded-full flex items-center justify-center shadow-md"></i>' : '<div class="w-full h-full border-2 border-slate-400 bg-slate-800 rounded-full shadow-md"></div>';
+
             if (currentViewMode === 'grid') {
                 return `
-                <div class="relative aspect-square bg-slate-800 rounded-xl border border-slate-700 shadow-sm group">
+                <div id="card_${f.key}" oncontextmenu="event.preventDefault();" ontouchstart="startLongPress('${f.key}', 'file')" ontouchend="cancelLongPress()" onmousedown="startLongPress('${f.key}', 'file')" onmouseup="cancelLongPress()" onmouseleave="cancelLongPress()" onclick="if(isSelectionMode) toggleSelectItem('${f.key}', 'file');" class="relative aspect-square bg-slate-800 rounded-xl border border-slate-700 shadow-sm group no-select ${selClass}">
+                    <div class="absolute top-2 left-2 w-5 h-5 z-20 select-checkbox ${isSelectionMode ? 'opacity-100' : 'opacity-0'} pointer-events-none">${checkIcon}</div>
                     <div class="absolute inset-0 rounded-xl overflow-hidden pointer-events-none">
                         ${gridIconHtml}
-                        <div class="absolute top-0 w-full h-1/3 bg-gradient-to-b from-black/60 to-transparent pointer-events-none"></div>
-                        <div class="absolute bottom-0 w-full bg-gradient-to-t from-black/90 via-black/40 to-transparent p-1.5 pt-6 pointer-events-auto flex flex-col">
+                        <div class="absolute top-0 w-full h-1/3 bg-gradient-to-b from-black/60 to-transparent"></div>
+                        <div class="absolute bottom-0 w-full bg-gradient-to-t from-black/90 via-black/40 to-transparent p-1.5 pt-6 flex flex-col">
                             <p class="font-medium text-white text-[10px] leading-tight line-clamp-2 selectable" title="${f.file_name}">${f.file_name}</p>
                             <p class="text-[8px] text-slate-300 mt-0.5 drop-shadow-md">${formatDate(f.timestamp)}</p>
                         </div>
                     </div>
-                    
-                    <span class="absolute top-1.5 left-1.5 text-[9px] text-white font-semibold bg-black/50 px-1.5 py-0.5 rounded backdrop-blur-md z-10">${formatBytes(f.file_size)}</span>
-                    
-                    <div class="absolute top-1 right-1 flex-shrink-0 z-20">
-                        <button onclick="openActionMenu('${f.key}')" class="w-8 h-8 rounded-full bg-black/30 backdrop-blur-md flex items-center justify-center text-white/90 hover:text-white active:bg-slate-700/80 transition shadow-sm border border-white/10">
+                    <span class="absolute top-1.5 left-1.5 text-[9px] text-white font-semibold bg-black/50 px-1.5 py-0.5 rounded backdrop-blur-md z-10 pointer-events-none ${isSelectionMode ? 'hidden' : ''}">${formatBytes(f.file_size)}</span>
+                    <div class="absolute top-1 right-1 flex-shrink-0 z-20 ${isSelectionMode ? 'hidden' : ''}">
+                        <button onclick="event.stopPropagation(); openActionMenu('${f.key}')" class="w-8 h-8 rounded-full bg-black/30 backdrop-blur-md flex items-center justify-center text-white/90 hover:text-white active:bg-slate-700/80 transition shadow-sm border border-white/10">
                             <i class="fa-solid fa-ellipsis-vertical text-sm"></i>
                         </button>
                     </div>
                 </div>`;
             }
 
-            // --- LIST VIEW CARD (Default) ---
             return `
-                <div class="bg-slate-800 p-3 rounded-2xl border border-slate-700 flex justify-between items-center shadow-sm">
-                    <div class="flex items-center overflow-hidden flex-1 mr-3">
-                        <div class="w-12 h-12 ${colorClass} rounded-xl flex items-center justify-center mr-3 flex-shrink-0">
+                <div id="card_${f.key}" oncontextmenu="event.preventDefault();" ontouchstart="startLongPress('${f.key}', 'file')" ontouchend="cancelLongPress()" onmousedown="startLongPress('${f.key}', 'file')" onmouseup="cancelLongPress()" onmouseleave="cancelLongPress()" onclick="if(isSelectionMode) toggleSelectItem('${f.key}', 'file');" class="bg-slate-800 p-3 rounded-2xl border border-slate-700 flex justify-between items-center shadow-sm cursor-pointer active:bg-slate-700 transition no-select ${selClass}">
+                    <div class="flex items-center overflow-hidden flex-1 mr-3 pointer-events-none">
+                        <div class="${isSelectionMode ? 'block' : 'hidden'} w-6 h-6 mr-3 flex-shrink-0 z-20 select-checkbox pointer-events-none">${checkIcon}</div>
+                        <div class="w-12 h-12 ${colorClass} rounded-xl flex items-center justify-center mr-3 flex-shrink-0 relative">
                             ${iconHtml}
                         </div>
                         <div class="overflow-hidden">
@@ -1053,8 +2183,8 @@
                             <p class="text-[11px] text-slate-400 mt-0.5">${formatBytes(f.file_size)} <span class="mx-1">•</span> ${formatDate(f.timestamp)}</p>
                         </div>
                     </div>
-                    <div class="relative flex-shrink-0">
-                        <button onclick="openActionMenu('${f.key}')" class="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-700 active:bg-slate-600 hover:text-white transition">
+                    <div class="relative flex-shrink-0 z-20 ${isSelectionMode ? 'hidden' : ''}">
+                        <button onclick="event.stopPropagation(); openActionMenu('${f.key}')" class="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-700 active:bg-slate-600 hover:text-white transition">
                             <i class="fa-solid fa-ellipsis-vertical text-lg"></i>
                         </button>
                     </div>
@@ -1062,7 +2192,14 @@
         }
 
         function loadFilesRealtime(pendingCategory = null) {
+            if (!currentUser) return; // সিকিউরিটি চেক: ইউজার না থাকলে ডাটাবেস কল হবে না
+            
+            // LOGICAL FIX: Turn off previous listeners to prevent Memory Leak and ghost data
+            db.ref('users/' + currentUser.uid).off();
+            
             db.ref('users/' + currentUser.uid).on('value', (snapshot) => {
+                if (!currentUser) return; // লগআউট হওয়ার পর ডেটা আসলে ইগনোর করবে
+                
                 allUserFilesGlobal = [];
                 allUserFoldersGlobal = [];
                 let stats = {
@@ -1076,13 +2213,25 @@
                     }
                 };
 
-                if (snapshot.exists()) {
-                    let data = snapshot.val();
-                    
+                let trashSize = 0;
+allTrashedFilesGlobal = [];
+allTrashedFoldersGlobal = [];
+if (snapshot.exists()) {
+    let data = snapshot.val();
+    let nowMs = Date.now();
+                    let filesToDeletePerm = [];
+                    let foldersToDeletePerm =[];
+
                     // লোড ফোল্ডারস
                     if (data.folders) {
                         Object.keys(data.folders).forEach(key => {
-                            allUserFoldersGlobal.push({key: key, ...data.folders[key]});
+                            let folder = {key: key, ...data.folders[key]};
+                            if (folder.is_trashed) {
+                                if (nowMs - folder.trashed_at > TRASH_EXPIRY_MS) foldersToDeletePerm.push(folder.key);
+                                else allTrashedFoldersGlobal.push(folder);
+                            } else {
+                                allUserFoldersGlobal.push(folder);
+                            }
                         });
                     }
 
@@ -1090,27 +2239,53 @@
                     if (data.files) {
                         Object.keys(data.files).forEach(key => {
                             let file = {key: key, ...data.files[key]};
-                            if (!file.folder_id) file.folder_id = 'root'; // পুরানো ফাইলগুলোর জন্য ফলব্যাক
-                            allUserFilesGlobal.push(file); 
+                            if (!file.folder_id) file.folder_id = 'root'; 
                             
-                            let type = getFileType(file.file_name);
-                            stats.totalSize += file.file_size;
-                            stats.categories[type].count++;
-                            stats.categories[type].size += file.file_size;
+                            if (file.is_trashed) {
+                                if (nowMs - file.trashed_at > TRASH_EXPIRY_MS) filesToDeletePerm.push(file);
+                                else {
+                                    allTrashedFilesGlobal.push(file);
+                                    trashSize += file.file_size;
+                                    stats.totalSize += file.file_size; // Trash takes storage limit
+                                }
+                            } else {
+                                allUserFilesGlobal.push(file); 
+                                let type = getFileType(file.file_name);
+                                stats.totalSize += file.file_size;
+                                stats.categories[type].count++;
+                                stats.categories[type].size += file.file_size;
+                            }
                         });
                     }
+
+                    // Auto Delete Background Check
+                    // এখন এটি ব্যাকএন্ড (Render Server) থেকে অটোমেটিক কন্ট্রোল হচ্ছে। তাই ইউজারের ডিভাইসের উপর চাপ কমানো হলো।
                 }
                 
                 allUserFilesGlobal.sort((a, b) => b.timestamp - a.timestamp);
                 allUserFoldersGlobal.sort((a, b) => b.timestamp - a.timestamp);
 
-                // Update Storage Stats
-                document.getElementById('usedStorageText').innerText = formatBytes(stats.totalSize);
-                document.getElementById('remainingStorageText').innerText = `Remaining: ${formatBytes(TOTAL_STORAGE_LIMIT - stats.totalSize)}`;
+                // LOGICAL FIX: Auto-escape if current folder was deleted by Admin or Auto-delete
+                if (currentFolderId !== 'root' && !allUserFoldersGlobal.some(f => f.key === currentFolderId)) {
+                    currentFolderId = 'root';
+                    currentFolderName = 'All Files';
+                    updateBreadcrumbs();
+                    showToast("Folder no longer exists.");
+                    setTimeout(hideToast, 2000);
+                }
+
+                // Update Trash Details
+                document.getElementById('trashStorageText').innerHTML = `<i class="fa-solid fa-trash-can text-[10px] mr-1 text-red-400"></i>${formatBytes(trashSize)}`;
+                document.getElementById('profileTrashSize').innerText = formatBytes(trashSize);
+
+                // Update Profile Tab Stats
+                let profileTotalFilesElem = document.getElementById('profileTotalFiles');
+                if(profileTotalFilesElem) profileTotalFilesElem.innerText = allUserFilesGlobal.length;
+                let profileTotalStorageElem = document.getElementById('profileTotalStorage');
+                if(profileTotalStorageElem) profileTotalStorageElem.innerText = formatBytes(stats.totalSize);
                 
-                let percent = ((stats.totalSize / TOTAL_STORAGE_LIMIT) * 100).toFixed(2);
-                document.getElementById('storagePercentage').innerText = `${percent}%`;
-                document.getElementById('storageProgress').style.setProperty('--progress', `${percent * 3.6}deg`);
+                // Call Smart UI Updater
+                updateStorageUI(stats.totalSize);
 
                 // Update Category Cards
                 ['image', 'video', 'document', 'audio', 'other'].forEach(cat => {
@@ -1122,6 +2297,7 @@
                 // Apply View Mode & Render All Active Lists dynamically
                 updateViewButtons();
                 renderAllActiveLists();
+                if(!document.getElementById('trashTab').classList.contains('hidden')) renderTrashList();
 
                 // Auto-open saved category on first load after refresh
                 if(pendingCategory) {
@@ -1189,22 +2365,38 @@
             let filter = query.toLowerCase();
             let container = document.getElementById(containerId);
             let cards = container.children;
+            let visibleCount = 0;
+            
+            // Remove old empty state if exists
+            let oldEmpty = document.getElementById(containerId + '_emptySearch');
+            if (oldEmpty) oldEmpty.remove();
             
             for (let i = 0; i < cards.length; i++) {
                 let card = cards[i];
-                // Skip placeholder text if empty
                 if (card.tagName.toLowerCase() === 'p' || card.querySelector('.fa-folder-open')) continue;
 
                 let titleElement = card.querySelector('.selectable');
                 if (titleElement) {
                     let text = titleElement.innerText || titleElement.textContent;
-                    // Check if file name matches the search query
                     if (text.toLowerCase().indexOf(filter) > -1) {
-                        card.style.display = ""; // Show
+                        card.style.display = ""; 
+                        visibleCount++;
                     } else {
-                        card.style.display = "none"; // Hide
+                        card.style.display = "none"; 
                     }
                 }
+            }
+            
+            // LOGICAL FIX: Show "No results found" if everything is hidden
+            if (visibleCount === 0 && filter !== "") {
+                let emptyDiv = document.createElement('div');
+                emptyDiv.id = containerId + '_emptySearch';
+                emptyDiv.className = "flex flex-col items-center justify-center py-10 opacity-60 col-span-full w-full";
+                emptyDiv.innerHTML = `
+                    <i class="fa-solid fa-magnifying-glass text-4xl text-slate-500 mb-3"></i>
+                    <p class="text-slate-400 text-sm font-semibold">No results found for "${query}"</p>
+                `;
+                container.appendChild(emptyDiv);
             }
         }
 
@@ -1212,20 +2404,45 @@
         function openActionMenu(itemKey, isFolder = false) {
             let btnDownload = document.getElementById('btnDownloadFile');
             let btnDelete = document.getElementById('btnDeleteFile');
-            let btnMove = document.getElementById('btnMoveFile'); // Move Button
+            let btnMove = document.getElementById('btnMoveFile'); 
+            let btnRename = document.getElementById('btnRenameFile'); 
+            let btnRestore = document.getElementById('btnRestoreFile');
+            let btnDeleteForever = document.getElementById('btnDeleteForeverFile');
             
             let newBtnDownload = btnDownload.cloneNode(true);
             let newBtnDelete = btnDelete.cloneNode(true);
             let newBtnMove = btnMove.cloneNode(true);
+            let newBtnRename = btnRename.cloneNode(true);
+            let newBtnRestore = btnRestore.cloneNode(true);
+            let newBtnDeleteForever = btnDeleteForever.cloneNode(true);
             
             btnDownload.parentNode.replaceChild(newBtnDownload, btnDownload);
             btnDelete.parentNode.replaceChild(newBtnDelete, btnDelete);
             btnMove.parentNode.replaceChild(newBtnMove, btnMove);
+            btnRename.parentNode.replaceChild(newBtnRename, btnRename);
+            btnRestore.parentNode.replaceChild(newBtnRestore, btnRestore);
+            btnDeleteForever.parentNode.replaceChild(newBtnDeleteForever, btnDeleteForever);
+
+            let isTrashed = false;
+            let folder = allUserFoldersGlobal.find(f => f.key === itemKey) || allTrashedFoldersGlobal.find(f => f.key === itemKey);
+            let file = allUserFilesGlobal.find(f => f.key === itemKey) || allTrashedFilesGlobal.find(f => f.key === itemKey);
+            
+            if ((folder && folder.is_trashed) || (file && file.is_trashed)) isTrashed = true;
+
+            // UI Button Toggle
+            if (isTrashed) {
+                newBtnDownload.classList.add('hidden'); newBtnMove.classList.add('hidden'); newBtnRename.classList.add('hidden'); newBtnDelete.classList.add('hidden');
+                newBtnRestore.classList.remove('hidden'); newBtnRestore.classList.add('flex');
+                newBtnDeleteForever.classList.remove('hidden'); newBtnDeleteForever.classList.add('flex');
+            } else {
+                newBtnDownload.classList.remove('hidden'); newBtnMove.classList.remove('hidden'); newBtnRename.classList.remove('hidden'); newBtnDelete.classList.remove('hidden');
+                newBtnDownload.classList.add('flex'); newBtnMove.classList.add('flex'); newBtnRename.classList.add('flex'); newBtnDelete.classList.add('flex');
+                newBtnRestore.classList.add('hidden'); newBtnDeleteForever.classList.add('hidden');
+            }
 
             let iconBox = document.getElementById('actionMenuIcon');
 
             if (isFolder) {
-                let folder = allUserFoldersGlobal.find(f => f.key === itemKey);
                 if (!folder) return;
 
                 // Calculate total size and files to download inside folder
@@ -1256,13 +2473,16 @@
                     openMoveMenu(folder.key, 'folder');
                 };
                 
-                newBtnDelete.onclick = function() {
+                newBtnRename.onclick = function() {
                     closeActionMenu();
-                    deleteFolder(folder.key);
+                    openRenameModal(folder.key, 'folder');
                 };
+                
+                newBtnDelete.onclick = function() { closeActionMenu(); deleteFolder(folder.key); };
+                newBtnRestore.onclick = function() { closeActionMenu(); restoreItem(folder.key, 'folder'); };
+                newBtnDeleteForever.onclick = function() { closeActionMenu(); permanentDelete(folder.key, 'folder'); };
 
             } else {
-                let file = allUserFilesGlobal.find(f => f.key === itemKey);
                 if(!file) return;
 
                 document.getElementById('actionMenuTitle').innerText = file.file_name;
@@ -1286,7 +2506,10 @@
                 iconBox.innerHTML = iconHtml;
                 iconBox.className = `w-14 h-14 rounded-xl flex items-center justify-center text-2xl shrink-0 shadow-inner ${bgClass}`;
 
-                let encodedName = encodeURIComponent(file.file_name.replace(/ /g, '_'));
+                // সার্ভার যেন ক্র্যাশ না করে তাই URL থেকে ব্র্যাকেট এবং স্পেশাল ক্যারেক্টার রিমুভ করা হলো
+                let safeBackendName = file.file_name.replace(/[^a-zA-Z0-9.\-_]/g, '_').replace(/_+/g, '_');
+                let encodedName = encodeURIComponent(safeBackendName);
+                
                 newBtnDownload.onclick = function() {
                     closeActionMenu();
                     safeDownload(this, file.message_id, encodedName);
@@ -1297,10 +2520,14 @@
                     openMoveMenu(file.key, 'file');
                 };
                 
-                newBtnDelete.onclick = function() {
+                newBtnRename.onclick = function() {
                     closeActionMenu();
-                    deleteFile(file.key, file.message_id);
+                    openRenameModal(file.key, 'file');
                 };
+                
+                newBtnDelete.onclick = function() { closeActionMenu(); deleteFile(file.key, file.message_id); };
+                newBtnRestore.onclick = function() { closeActionMenu(); restoreItem(file.key, 'file'); };
+                newBtnDeleteForever.onclick = function() { closeActionMenu(); permanentDelete(file.key, 'file', file.message_id); };
             }
 
             // Show Bottom Sheet
@@ -1372,7 +2599,7 @@
             let deltaY = e.changedTouches[0].clientY - sheetStartY;
             // মেনু ক্লোজ হওয়ার লিমিট আরও কমিয়ে ৫০ করা হলো যেন হালকা স্লাইডেই কাজ করে
             if (deltaY > 50) { 
-                // আঙুল ছাড়ার সাথে সাথেই মেনুটা একবারে নিচে (100%) নামিয়ে দেওয়া হলো, তাই আর মাঝখানে থেমে থাকবে না
+                // আঙুল ছাড়ার সাথে সাথেই মেনুটা একবারে নিচে (100%) নামিয়ে দেওয়া হলো, তাই আর মাঝখানে থেমে থাকবেষ্ঠান
                 actionSheet.style.transform = 'translate3d(0, 100%, 0)';
                 closeActionMenu();
             } else { 
@@ -1385,8 +2612,10 @@
 
         function showToast(msg) {
             let toast = document.getElementById('toastNotification');
+            let icon = document.getElementById('toastIcon');
             if(toast) {
                 document.getElementById('toastMessage').innerText = msg;
+                icon.className = "fa-solid fa-circle-notch fa-spin text-blue-400 text-lg";
                 toast.classList.remove('opacity-0', '-translate-y-10');
                 toast.classList.add('opacity-100', 'translate-y-0');
             }
@@ -1444,10 +2673,11 @@
 
             try {
                 await ensureCloudIsAwake(); 
-                // API_BASE_URL এর সাথে messageId এবং ফাইলের নাম পাঠানো হচ্ছে
-                triggerDownload(`${API_BASE_URL}/download/${messageId}/${encodedFileName}`);
+                let safeMessageId = encodeURIComponent(messageId);
+                triggerDownload(`${API_BASE_URL}/download/${safeMessageId}/${encodedFileName}`);
             } catch(e) {
-                alert("Network error. Please check your connection.");
+                if (e.message.includes("503")) showToast("Server busy, try again in 5 sec");
+                else alert("Network error. Please check your connection.");
             } finally {
                 setTimeout(() => {
                     icon.className = originalIconClass;
@@ -1499,8 +2729,10 @@
                 formData.append("folder_name", folderName);
                 formData.append("files_data", JSON.stringify(filesToZip));
 
+                let token = await currentUser.getIdToken();
                 let response = await fetch(`${API_BASE_URL}/prepare-zip`, {
                     method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token },
                     body: formData
                 });
 
@@ -1546,10 +2778,11 @@
                 
                 for (let i = 0; i < filesToDownload.length; i++) {
                     let file = filesToDownload[i];
-                    let encodedName = encodeURIComponent(file.file_name.replace(/ /g, '_'));
-                    triggerDownload(`${API_BASE_URL}/download/${file.message_id}/${encodedName}`);
+                    let safeBackendName = file.file_name.replace(/[^a-zA-Z0-9.\-_]/g, '_').replace(/_+/g, '_');
+                    let encodedName = encodeURIComponent(safeBackendName);
+                    let safeMessageId = encodeURIComponent(file.message_id);
+                    triggerDownload(`${API_BASE_URL}/download/${safeMessageId}/${encodedName}`);
                     
-                    // 1 second delay between downloads so browser doesn't block them
                     await new Promise(resolve => setTimeout(resolve, 1000));
                 }
             } catch(e) {
@@ -1558,21 +2791,236 @@
             }
         }
 
-        // 9. Smart Delete Logic
-        async function deleteFile(dbKey, messageId) {
-            if(!confirm("Delete this file permanently?")) return;
+        // 9. Soft Delete & Recycle Bin Logic
+        function deleteFile(dbKey, messageId) {
+            db.ref(`users/${currentUser.uid}/files/${dbKey}`).update({
+                is_trashed: true, trashed_at: firebase.database.ServerValue.TIMESTAMP
+            });
+            showToast("Moved to Recycle Bin");
+            setTimeout(hideToast, 2000);
+        }
+
+        // --- TRASH MENU & RESTORE LOGIC ---
+        function openTrash() {
+            showTab('trash', false);
+            history.pushState({ view: 'trash' }, "", "#trash");
+            renderTrashList();
+        }
+
+        function renderTrashList() {
+    let container = document.getElementById('trashFileList');
+    container.innerHTML = '';
+    
+    // ম্যাজিক লজিক: যে ফাইল বা ফোল্ডারের প্যারেন্ট ফোল্ডারটিও ট্র্যাশে আছে, তাকে হাইড করে রাখা হবে
+    let topLevelTrashedFolders = allTrashedFoldersGlobal.filter(folder => 
+        !allTrashedFoldersGlobal.some(p => p.key === folder.parent_id)
+    );
+    let topLevelTrashedFiles = allTrashedFilesGlobal.filter(file => 
+        !allTrashedFoldersGlobal.some(p => p.key === file.folder_id)
+    );
+    
+    if (topLevelTrashedFolders.length === 0 && topLevelTrashedFiles.length === 0) {
+        container.innerHTML = `
+        <div class="flex flex-col items-center justify-center py-20 opacity-50 absolute inset-0">
+            <i class="fa-solid fa-trash-can text-5xl text-slate-500 mb-4"></i>
+            <p class="text-slate-400 text-sm">Recycle Bin is empty</p>
+        </div>`;
+        return;
+    }
+
+    const nowMs = Date.now();
+
+    // Helper to compute remaining days and styling
+    function getDaysLeftInfo(trashedAt) {
+        const expiryMs = trashedAt + TRASH_EXPIRY_MS;
+        const remainingMs = expiryMs - nowMs;
+        const daysLeft = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
+        
+        if (daysLeft <= 0) {
+            return { text: "Expires today", className: "text-red-500 font-bold" };
+        } else if (daysLeft === 1) {
+            return { text: "1 day left", className: "text-yellow-400" };
+        } else if (daysLeft <= 7) {
+            return { text: `${daysLeft} days left`, className: "text-yellow-400" };
+        } else {
+            return { text: `${daysLeft} days left`, className: "text-green-400" };
+        }
+    }
+
+    topLevelTrashedFolders.forEach(folder => {
+        const daysInfo = getDaysLeftInfo(folder.trashed_at);
+        let div = document.createElement('div');
+        div.className = "bg-slate-800/60 p-3 rounded-2xl border border-red-500/20 flex justify-between items-center shadow-sm relative overflow-hidden";
+        div.innerHTML = `
+            <div class="absolute left-0 top-0 bottom-0 w-1 bg-red-500/50"></div>
+            <div class="flex items-center overflow-hidden flex-1 ml-2 pointer-events-none opacity-60">
+                <div class="w-12 h-12 bg-red-500/10 text-red-400 rounded-xl flex items-center justify-center mr-3 flex-shrink-0">
+                    <i class="fa-solid fa-folder text-2xl"></i>
+                </div>
+                <div class="overflow-hidden">
+                    <p class="font-semibold text-slate-300 text-sm truncate w-full line-through">${folder.folder_name}</p>
+                    <p class="text-[11px] text-red-400/80 mt-0.5">Trashed Folder · <span class="${daysInfo.className}">${daysInfo.text}</span></p>
+                </div>
+            </div>
+            <button onclick="openActionMenu('${folder.key}', true)" class="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-700 active:bg-slate-600 hover:text-white transition z-10 relative">
+                <i class="fa-solid fa-ellipsis-vertical text-lg"></i>
+            </button>
+        `;
+        container.appendChild(div);
+    });
+
+    topLevelTrashedFiles.forEach(f => {
+        const daysInfo = getDaysLeftInfo(f.trashed_at);
+        let div = document.createElement('div');
+        div.className = "bg-slate-800/60 p-3 rounded-2xl border border-red-500/20 flex justify-between items-center shadow-sm relative overflow-hidden";
+        let iconHtml = f.thumbnail ? `<img src="${f.thumbnail}" class="w-full h-full object-cover rounded-xl shadow-sm grayscale opacity-70">` : `<i class="fa-solid fa-file text-xl"></i>`;
+        
+        div.innerHTML = `
+            <div class="absolute left-0 top-0 bottom-0 w-1 bg-red-500/50"></div>
+            <div class="flex items-center overflow-hidden flex-1 ml-2 pointer-events-none opacity-60">
+                <div class="w-12 h-12 bg-red-500/10 text-red-400 rounded-xl flex items-center justify-center mr-3 flex-shrink-0 relative">
+                    ${iconHtml}
+                </div>
+                <div class="overflow-hidden">
+                    <p class="font-semibold text-slate-300 text-sm truncate w-full line-through">${f.file_name}</p>
+                    <p class="text-[11px] text-red-400/80 mt-0.5">${formatBytes(f.file_size)} · <span class="${daysInfo.className}">${daysInfo.text}</span></p>
+                </div>
+            </div>
+            <button onclick="openActionMenu('${f.key}')" class="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-700 active:bg-slate-600 hover:text-white transition z-10 relative">
+                <i class="fa-solid fa-ellipsis-vertical text-lg"></i>
+            </button>
+        `;
+        container.appendChild(div);
+    });
+}
+
+        async function restoreItem(key, type) {
+            let updates = {};
+            if (type === 'file') {
+                updates[`users/${currentUser.uid}/files/${key}/is_trashed`] = null;
+                updates[`users/${currentUser.uid}/files/${key}/trashed_at`] = null;
+            } else {
+                let folders = [key];
+                function findDescendants(parentId) {
+                    allTrashedFoldersGlobal.filter(f => f.parent_id === parentId).forEach(child => {
+                        folders.push(child.key);
+                        findDescendants(child.key);
+                    });
+                }
+                findDescendants(key);
+
+                folders.forEach(fid => {
+                    updates[`users/${currentUser.uid}/folders/${fid}/is_trashed`] = null;
+                    updates[`users/${currentUser.uid}/folders/${fid}/trashed_at`] = null;
+                    allTrashedFilesGlobal.filter(f => f.folder_id === fid).forEach(file => {
+                        updates[`users/${currentUser.uid}/files/${file.key}/is_trashed`] = null;
+                        updates[`users/${currentUser.uid}/files/${file.key}/trashed_at`] = null;
+                    });
+                });
+            }
             try {
-                showToast("Deleting...");
-                await ensureCloudIsAwake(); 
-                // API_BASE_URL অ্যাড করা হয়েছে
-                await fetch(`${API_BASE_URL}/delete/${messageId}`, { method: 'DELETE' });
-                db.ref(`users/${currentUser.uid}/files/${dbKey}`).remove();
+                await db.ref().update(updates);
+                showToast("Restored successfully");
+                setTimeout(hideToast, 1500);
+            } catch(e) { alert("Error restoring item."); }
+        }
+
+        async function permanentDelete(key, type, messageId = null) {
+            if(!confirm("Delete this item FOREVER? This cannot be undone!")) return;
+            showToast("Deleting permanently...");
+            try {
+                await ensureCloudIsAwake();
+                let updates = {};
+                
+                if (type === 'file') {
+                    let token = await currentUser.getIdToken();
+                    let safeMessageId = encodeURIComponent(messageId);
+                    let res = await fetch(`${API_BASE_URL}/delete/${safeMessageId}`, { 
+                        method: 'DELETE',
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    if (!res.ok) throw new Error("Server failed to delete the file.");
+                    
+                    updates[`users/${currentUser.uid}/files/${key}`] = null;
+                } else {
+                    let folders = [key], files = [];
+                    function findDescendants(parentId) {
+                        allTrashedFoldersGlobal.filter(f => f.parent_id === parentId).forEach(child => {
+                            folders.push(child.key);
+                            findDescendants(child.key);
+                        });
+                    }
+                    findDescendants(key);
+
+                    folders.forEach(fid => {
+                        files.push(...allTrashedFilesGlobal.filter(f => f.folder_id === fid));
+                    });
+
+                    let messageIdsToDelete = [];
+                    for (let file of files) {
+                        if(file.message_id) messageIdsToDelete.push(file.message_id);
+                        updates[`users/${currentUser.uid}/files/${file.key}`] = null;
+                    }
+                    folders.forEach(fid => updates[`users/${currentUser.uid}/folders/${fid}`] = null);
+                    
+                    if (messageIdsToDelete.length > 0) {
+                        let res = await fetch(`${API_BASE_URL}/bulk-delete`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ message_ids: messageIdsToDelete })
+                        });
+                        if (!res.ok) throw new Error("Server failed to bulk-delete.");
+                    }
+                }
+                await db.ref().update(updates);
                 hideToast();
-            } catch(e) {
-                hideToast();
-                alert("Error deleting file.");
+                showToast("Deleted forever.");
+                setTimeout(hideToast, 2000);
+            } catch(e) { 
+                hideToast(); 
+                alert("Error deleting: " + e.message); 
             }
         }
+
+        async function emptyTrash() {
+            if (allTrashedFilesGlobal.length === 0 && allTrashedFoldersGlobal.length === 0) return;
+            if(!confirm("Empty the Recycle Bin? All items will be deleted FOREVER!")) return;
+            showToast("Emptying Recycle Bin...");
+            try {
+                await ensureCloudIsAwake();
+                let updates = {};
+                let messageIdsToDelete = [];
+                
+                for (let file of allTrashedFilesGlobal) {
+                    if(file.message_id) messageIdsToDelete.push(file.message_id);
+                    updates[`users/${currentUser.uid}/files/${file.key}`] = null;
+                }
+                for (let folder of allTrashedFoldersGlobal) updates[`users/${currentUser.uid}/folders/${folder.key}`] = null;
+                
+                if (messageIdsToDelete.length > 0) {
+                    let token = await currentUser.getIdToken();
+                    let res = await fetch(`${API_BASE_URL}/bulk-delete`, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + token
+                        },
+                        body: JSON.stringify({ message_ids: messageIdsToDelete })
+                    });
+                    if (!res.ok) throw new Error("Server failed to bulk-delete.");
+                }
+
+                await db.ref().update(updates);
+                hideToast();
+                showToast("Recycle Bin Emptied!");
+                setTimeout(hideToast, 2000);
+            } catch(e) { 
+                hideToast(); 
+                alert("Error emptying trash: " + e.message); 
+            }
+        }
+
+        // processAutoDelete function removed - handled securely by Backend Cron Job
 
         // --- ADD MENU & FOLDER MODAL LOGIC ---
         let addMenuSheet = document.getElementById('addMenuSheet');
@@ -1693,6 +3141,344 @@
             }
         }
 
+        // --- RENAME LOGIC ---
+        let renameItemKey = null;
+        let renameItemType = null;
+        let renameFileExt = ""; 
+
+        function openRenameModal(key, type) {
+            renameItemKey = key;
+            renameItemType = type;
+            renameFileExt = ""; 
+
+            let currentName = "";
+            
+            if (type === 'file') {
+                let file = allUserFilesGlobal.find(f => f.key === key);
+                if (file) {
+                    currentName = file.file_name;
+                    // Extract extension to prevent user from deleting it
+                    let lastDot = currentName.lastIndexOf('.');
+                    if (lastDot !== -1 && lastDot !== 0) {
+                        renameFileExt = currentName.substring(lastDot); // e.g., ".jpg"
+                        currentName = currentName.substring(0, lastDot); // e.g., "my_photo"
+                    }
+                }
+            } else {
+                let folder = allUserFoldersGlobal.find(f => f.key === key);
+                if (folder) currentName = folder.folder_name;
+            }
+
+            document.getElementById('renameInput').value = currentName;
+
+            let modal = document.getElementById('renameModal');
+            let box = document.getElementById('renameBox');
+            let overlay = document.getElementById('renameOverlay');
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                overlay.classList.remove('opacity-0');
+                box.classList.remove('scale-95', 'opacity-0');
+                
+                let inputEl = document.getElementById('renameInput');
+                inputEl.focus();
+                // Select text automatically for quick typing
+                inputEl.setSelectionRange(0, inputEl.value.length);
+            }, 10);
+        }
+
+        function closeRenameModal() {
+            let modal = document.getElementById('renameModal');
+            let box = document.getElementById('renameBox');
+            let overlay = document.getElementById('renameOverlay');
+            
+            overlay.classList.add('opacity-0');
+            box.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                document.getElementById('renameInput').value = '';
+            }, 300);
+        }
+
+        function confirmRename() {
+            let rawName = document.getElementById('renameInput').value.trim();
+            
+            // স্পেশাল ক্যারেক্টারগুলো রিমুভ করা হচ্ছে যা সার্ভারের HTTP Header বা URL ব্রেক করে দেয়
+            let newName = rawName.replace(/["'`\\/:*?<>|,]/g, '').trim();
+            
+            if (!newName) {
+                showToast("Invalid name! Please use normal text.");
+                setTimeout(hideToast, 2000);
+                return;
+            }
+
+            // Re-attach extension for files
+            let finalName = newName + renameFileExt;
+            
+            // Check for duplicate names using existing unique logic
+            let targetId = currentFolderId;
+            if (renameItemType === 'file') {
+                let file = allUserFilesGlobal.find(f => f.key === renameItemKey);
+                if(file) targetId = file.folder_id;
+            } else {
+                let folder = allUserFoldersGlobal.find(f => f.key === renameItemKey);
+                if(folder) targetId = folder.parent_id;
+            }
+
+            let uniqueFinalName = getUniqueName(finalName, targetId, renameItemType);
+
+            // Update Firebase
+            if (renameItemType === 'file') {
+                db.ref(`users/${currentUser.uid}/files/${renameItemKey}`).update({
+                    file_name: uniqueFinalName
+                });
+            } else {
+                db.ref(`users/${currentUser.uid}/folders/${renameItemKey}`).update({
+                    folder_name: uniqueFinalName
+                });
+            }
+
+            closeRenameModal();
+            showToast("Renamed successfully");
+            setTimeout(hideToast, 2000);
+        }
+
+        // ==========================================
+        //         --- MULTI-SELECT LOGIC ---
+        // ==========================================
+        function startLongPress(key, type) {
+            if(isSelectionMode) return;
+            longPressTimer = setTimeout(() => {
+                enableSelectionMode(key, type);
+            }, 500); // 500ms long press
+        }
+
+        function cancelLongPress() {
+            clearTimeout(longPressTimer);
+        }
+
+        function enableSelectionMode(initialKey, type) {
+            isSelectionMode = true;
+            selectedItems = [{ key: initialKey, type: type }];
+            
+            // Hide main header & bottom nav, show selection bars
+            document.querySelector('.glass-header').classList.add('-translate-y-full');
+            document.querySelector('.glass-bottom-nav:not(#selectionBottomBar)').classList.add('translate-y-full');
+            document.getElementById('nav-upload').classList.add('scale-0', 'pointer-events-none');
+            
+            document.getElementById('selectionHeader').classList.remove('-translate-y-full');
+            document.getElementById('selectionBottomBar').classList.remove('translate-y-full');
+            
+            if (!history.state || history.state.modal !== 'selectionMode') {
+                history.pushState({ modal: 'selectionMode' }, "");
+            }
+            
+            updateSelectionUI();
+            renderAllActiveLists(); // Re-render to show checkboxes
+        }
+
+        function closeSelectionMode(fromHistory = false) {
+            isSelectionMode = false;
+            selectedItems = [];
+            
+            document.getElementById('selectionHeader').classList.add('-translate-y-full');
+            document.getElementById('selectionBottomBar').classList.add('translate-y-full');
+            
+            document.querySelector('.glass-header').classList.remove('-translate-y-full');
+            document.querySelector('.glass-bottom-nav:not(#selectionBottomBar)').classList.remove('translate-y-full');
+            if(!document.getElementById('uploadTab').classList.contains('hidden')) {
+                // Keep upload fab hidden if in upload/category tab
+            } else {
+                document.getElementById('nav-upload').classList.remove('scale-0', 'pointer-events-none');
+            }
+            
+            if (fromHistory !== true && history.state && history.state.modal === 'selectionMode') {
+                ignoreNextPopState = true; // পেজ পরিবর্তন ব্লক করা হলো
+                history.back();
+            }
+            
+            renderAllActiveLists(); // Hide checkboxes
+        }
+
+        function toggleSelectItem(key, type) {
+            let index = selectedItems.findIndex(i => i.key === key && i.type === type);
+            if (index > -1) {
+                selectedItems.splice(index, 1);
+            } else {
+                selectedItems.push({ key: key, type: type });
+            }
+            
+            if (selectedItems.length === 0) {
+                closeSelectionMode();
+            } else {
+                updateSelectionUI();
+                renderAllActiveLists(); // Fast UI update
+            }
+        }
+
+        function toggleSelectAll() {
+            let itemsToSelect = [];
+            
+            if (!document.getElementById('homeTab').classList.contains('hidden')) {
+                // Home Tab: শুধু ৬টি রিসেন্ট ফাইল সিলেক্ট করবে
+                itemsToSelect = allUserFilesGlobal.slice(0, 6).map(f => ({ key: f.key, type: 'file' }));
+            } 
+            else if (!document.getElementById('categoryTab').classList.contains('hidden')) {
+                // Category Tab: শুধু ওই ক্যাটাগরির ফাইল সিলেক্ট করবে
+                let catType = localStorage.getItem('lastActiveCategory');
+                itemsToSelect = allUserFilesGlobal.filter(f => getFileType(f.file_name) === catType).map(f => ({ key: f.key, type: 'file' }));
+            } 
+            else {
+                // Files Tab: বর্তমান ফোল্ডারের ফাইল ও ফোল্ডার সিলেক্ট করবে
+                let currentFolderFiles = allUserFilesGlobal.filter(f => f.folder_id === currentFolderId).map(f => ({ key: f.key, type: 'file' }));
+                let currentFolderFolders = allUserFoldersGlobal.filter(f => f.parent_id === currentFolderId).map(f => ({ key: f.key, type: 'folder' }));
+                itemsToSelect = [...currentFolderFolders, ...currentFolderFiles];
+            }
+
+            let totalItemsCount = itemsToSelect.length;
+
+            // Toggle logic
+            if (selectedItems.length === totalItemsCount && totalItemsCount > 0) {
+                selectedItems = [];
+            } else {
+                selectedItems = itemsToSelect;
+            }
+            
+            updateSelectionUI();
+            renderAllActiveLists();
+        }
+
+        function updateSelectionUI() {
+            document.getElementById('selectionCountText').innerText = `${selectedItems.length} Selected`;
+            
+            let totalItemsCount = 0;
+            if (!document.getElementById('homeTab').classList.contains('hidden')) {
+                totalItemsCount = Math.min(allUserFilesGlobal.length, 6);
+            } 
+            else if (!document.getElementById('categoryTab').classList.contains('hidden')) {
+                let catType = localStorage.getItem('lastActiveCategory');
+                totalItemsCount = allUserFilesGlobal.filter(f => getFileType(f.file_name) === catType).length;
+            } 
+            else {
+                let currentFolderFilesCount = allUserFilesGlobal.filter(f => f.folder_id === currentFolderId).length;
+                let currentFolderFoldersCount = allUserFoldersGlobal.filter(f => f.parent_id === currentFolderId).length;
+                totalItemsCount = currentFolderFilesCount + currentFolderFoldersCount;
+            }
+            
+            let selectAllBtn = document.getElementById('selectAllBtn');
+            if (selectAllBtn) {
+                if (selectedItems.length === totalItemsCount && totalItemsCount > 0) {
+                    selectAllBtn.innerText = "Deselect All";
+                } else {
+                    selectAllBtn.innerText = "Select All";
+                }
+            }
+        }
+
+        // --- MULTI-DOWNLOAD LOGIC (WITH RESTRICTIONS) ---
+        async function multiDownload() {
+            let folders = selectedItems.filter(i => i.type === 'folder');
+            let files = selectedItems.filter(i => i.type === 'file');
+
+            if (folders.length > 0 && files.length > 0) {
+                alert("You cannot download files and folders together. Please select only files, or only ONE folder.");
+                return;
+            }
+            if (folders.length > 1) {
+                alert("You can only download ONE folder at a time as ZIP.");
+                return;
+            }
+
+            if (folders.length === 1) {
+                // Download Single Folder as ZIP
+                let fData = allUserFoldersGlobal.find(f => f.key === folders[0].key);
+                if (fData) {
+                    closeSelectionMode();
+                    
+                    // Calculate size
+                    let totalSize = 0;
+                    function calcSize(fId) {
+                        allUserFilesGlobal.filter(x => x.folder_id === fId).forEach(x => totalSize += x.file_size);
+                        allUserFoldersGlobal.filter(x => x.parent_id === fId).forEach(x => calcSize(x.key));
+                    }
+                    calcSize(fData.key);
+                    
+                    downloadFolderAsZip(fData.key, fData.folder_name, totalSize);
+                }
+            } 
+            else if (files.length > 0) {
+                // Download Multiple Files Sequentially
+                closeSelectionMode();
+                showToast(`Starting ${files.length} downloads...`);
+                
+                try {
+                    await ensureCloudIsAwake();
+                    hideToast();
+                    
+                    for (let i = 0; i < files.length; i++) {
+                        let fData = allUserFilesGlobal.find(f => f.key === files[i].key);
+                        if (fData) {
+                            let safeBackendName = fData.file_name.replace(/[^a-zA-Z0-9.\-_]/g, '_').replace(/_+/g, '_');
+                            let encodedName = encodeURIComponent(safeBackendName);
+                            let safeMessageId = encodeURIComponent(fData.message_id);
+                            triggerDownload(`${API_BASE_URL}/download/${safeMessageId}/${encodedName}`);
+                            await new Promise(resolve => setTimeout(resolve, 1500)); 
+                        }
+                    }
+                } catch(e) {
+                    hideToast();
+                    alert("Network error.");
+                }
+            }
+        }
+
+        // --- MULTI-DELETE LOGIC (Move to Trash) ---
+        function multiDelete() {
+            showToast("Moving to Recycle Bin...");
+            
+            try {
+                let updates = {};
+                for(let item of selectedItems) {
+                    if (item.type === 'file') {
+                        updates[`users/${currentUser.uid}/files/${item.key}/is_trashed`] = true;
+                        updates[`users/${currentUser.uid}/files/${item.key}/trashed_at`] = firebase.database.ServerValue.TIMESTAMP;
+                    } else {
+                        let foldersToDelete = [item.key];
+                        function findDescendants(parentId) {
+                            allUserFoldersGlobal.filter(f => f.parent_id === parentId).forEach(child => {
+                                foldersToDelete.push(child.key);
+                                findDescendants(child.key);
+                            });
+                        }
+                        findDescendants(item.key);
+
+                        foldersToDelete.forEach(fid => {
+                            updates[`users/${currentUser.uid}/folders/${fid}/is_trashed`] = true;
+                            updates[`users/${currentUser.uid}/folders/${fid}/trashed_at`] = firebase.database.ServerValue.TIMESTAMP;
+                            
+                            allUserFilesGlobal.filter(f => f.folder_id === fid).forEach(file => {
+                                updates[`users/${currentUser.uid}/files/${file.key}/is_trashed`] = true;
+                                updates[`users/${currentUser.uid}/files/${file.key}/trashed_at`] = firebase.database.ServerValue.TIMESTAMP;
+                            });
+                        });
+                    }
+                }
+db.ref().update(updates).then(() => {
+                    hideToast();
+                    closeSelectionMode();
+                    showToast("Items moved to Recycle Bin");
+                    setTimeout(hideToast, 2000);
+                }).catch(e => {
+                    alert("Error moving items to trash.");
+                });
+    } catch(e) {
+        hideToast();
+        alert("Error moving items to trash.");
+    }
+}
+
         // ==========================================
         //         --- MOVE MENU LOGIC ---
         // ==========================================
@@ -1700,9 +3486,33 @@
         let moveMenuStartY = 0;
         let isMoveMenuDragging = false;
 
+        function openMultiMoveMenu() {
+            // Setup selected items for move
+            document.getElementById('moveItemNameDisplay').innerText = `${selectedItems.length} Items Selected`;
+            moveTargetId = currentFolderId;
+            navigateToMoveFolder(currentFolderId, currentFolderId === 'root' ? 'All Files' : currentFolderName);
+
+            let menu = document.getElementById('moveMenuContainer');
+            let overlay = document.getElementById('moveMenuOverlay');
+            
+            if (!history.state || history.state.modal !== 'moveMenu') {
+                history.pushState({ modal: 'moveMenu' }, "");
+            }
+            
+            menu.classList.remove('hidden');
+            menu.classList.add('flex');
+            moveMenuSheet.style.transform = ''; 
+            
+            setTimeout(() => {
+                overlay.classList.remove('opacity-0');
+                moveMenuSheet.classList.remove('translate-y-full');
+            }, 10);
+        }
+
         function openMoveMenu(itemId, type) {
-            moveItemId = itemId;
-            moveItemType = type;
+            // For single item move
+            isSelectionMode = false;
+            selectedItems = [{ key: itemId, type: type }];
             moveTargetId = currentFolderId; 
             
             // নাম ডিসপ্লে করা
@@ -1824,21 +3634,21 @@
             let files = allUserFilesGlobal.filter(f => f.folder_id === parentId);
 
             // --- LOOP PROTECTION & CURRENT ITEM HIDING ---
-            if (moveItemType === 'folder') {
-                let forbiddenIds = [moveItemId]; // নিজে এবং নিজের সব সন্তান নিষিদ্ধ
+            let forbiddenIds = [];
+            selectedItems.filter(i => i.type === 'folder').forEach(folderItem => {
+                forbiddenIds.push(folderItem.key);
                 function findDescendants(fId) {
-                    let children = allUserFoldersGlobal.filter(x => x.parent_id === fId);
-                    children.forEach(child => {
+                    allUserFoldersGlobal.filter(x => x.parent_id === fId).forEach(child => {
                         forbiddenIds.push(child.key);
                         findDescendants(child.key);
                     });
                 }
-                findDescendants(moveItemId);
-                folders = folders.filter(f => !forbiddenIds.includes(f.key)); // লিস্ট থেকে হাইড করে দিলাম
-            } else if (moveItemType === 'file') {
-                // যে ফাইলটিকে মুভ করা হচ্ছে, সেটি লিস্টে দেখানোর দরকার নেই
-                files = files.filter(f => f.key !== moveItemId);
-            }
+                findDescendants(folderItem.key);
+            });
+            folders = folders.filter(f => !forbiddenIds.includes(f.key));
+            
+            let selectedFileKeys = selectedItems.filter(i => i.type === 'file').map(i => i.key);
+            files = files.filter(f => !selectedFileKeys.includes(f.key));
 
             if (folders.length === 0 && files.length === 0) {
                 listContainer.innerHTML = `
@@ -1877,7 +3687,6 @@
             // 2. Render Unclickable/Disabled Files (Context only)
             files.forEach(file => {
                 let div = document.createElement('div');
-                // opacity-50 দিয়ে ড্রপবক্সের মতো ডিজেবল্ড লুক আনা হয়েছে
                 div.className = "bg-slate-800/60 p-3 rounded-xl border border-slate-700/40 flex justify-between items-center shadow-sm opacity-50 select-none pointer-events-none";
                 
                 let type = getFileType(file.file_name);
@@ -1911,65 +3720,67 @@
         }
 
         function confirmMove() {
-            let currentParentId = 'root';
-            let originalName = '';
-            
-            if (moveItemType === 'file') {
-                let file = allUserFilesGlobal.find(f => f.key === moveItemId);
-                if(file) { currentParentId = file.folder_id; originalName = file.file_name; }
-            } else {
-                let folder = allUserFoldersGlobal.find(f => f.key === moveItemId);
-                if(folder) { currentParentId = folder.parent_id; originalName = folder.folder_name; }
-            }
-
-            if (currentParentId === moveTargetId) {
-                showToast("Item is already in this folder.");
-                setTimeout(hideToast, 2000);
-                return;
-            }
-
             let btn = document.getElementById('btnConfirmMove');
             let originalBtnHtml = btn.innerHTML;
             btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Moving...`;
             btn.disabled = true;
 
-            // Collision Solution: Get Unique Name
-            let finalName = getUniqueName(originalName, moveTargetId, moveItemType);
-
             let updates = {};
-            if (moveItemType === 'file') {
-                updates[`users/${currentUser.uid}/files/${moveItemId}/folder_id`] = moveTargetId;
-                updates[`users/${currentUser.uid}/files/${moveItemId}/file_name`] = finalName;
-            } else {
-                updates[`users/${currentUser.uid}/folders/${moveItemId}/parent_id`] = moveTargetId;
-                updates[`users/${currentUser.uid}/folders/${moveItemId}/folder_name`] = finalName;
-            }
+            let itemsMoved = 0;
 
-            db.ref().update(updates).then(() => {
-                closeMoveMenu();
-                showToast("Moved successfully!");
-                setTimeout(hideToast, 2000);
-                
-                // মুভ কমপ্লিট হওয়ার পর ইউজারকে সরাসরি সেই নতুন ফোল্ডারে নিয়ে যাওয়া হবে
-                showTab('files'); 
-                openFolder(moveTargetId, moveTargetName);
-            }).catch(err => {
-                alert("Error moving item: " + err.message);
-            }).finally(() => {
+            selectedItems.forEach(item => {
+                let originalName = '';
+                let currentParentId = 'root';
+
+                if (item.type === 'file') {
+                    let file = allUserFilesGlobal.find(f => f.key === item.key);
+                    if(file) { currentParentId = file.folder_id; originalName = file.file_name; }
+                } else {
+                    let folder = allUserFoldersGlobal.find(f => f.key === item.key);
+                    if(folder) { currentParentId = folder.parent_id; originalName = folder.folder_name; }
+                }
+
+                if (currentParentId !== moveTargetId) {
+                    let finalName = getUniqueName(originalName, moveTargetId, item.type);
+                    if (item.type === 'file') {
+                        updates[`users/${currentUser.uid}/files/${item.key}/folder_id`] = moveTargetId;
+                        updates[`users/${currentUser.uid}/files/${item.key}/file_name`] = finalName;
+                    } else {
+                        updates[`users/${currentUser.uid}/folders/${item.key}/parent_id`] = moveTargetId;
+                        updates[`users/${currentUser.uid}/folders/${item.key}/folder_name`] = finalName;
+                    }
+                    itemsMoved++;
+                }
+            });
+
+            if (itemsMoved === 0) {
                 btn.innerHTML = originalBtnHtml;
                 btn.disabled = false;
-            });
+                showToast("Items are already in this folder.");
+                setTimeout(hideToast, 2000);
+                return;
+            }
+
+db.ref().update(updates).then(() => {
+    closeMoveMenu();
+    showToast("Moved successfully!");
+    setTimeout(hideToast, 2000);
+    
+    // মুভ কমপ্লিট হওয়ার পর ইউজারকে সরাসরি সেই নতুন ফোল্ডারে নিয়ে যাওয়া হবে
+    showTab('files'); 
+    openFolder(moveTargetId, moveTargetName);
+}).catch(err => {
+    alert("Error moving item: " + err.message);
+}).finally(() => {
+    btn.innerHTML = originalBtnHtml;
+    btn.disabled = false;
+});
         }
 
-        async function deleteFolder(folderKey) {
-            if(!confirm("Delete this folder and ALL items inside it permanently?")) return;
-            
-            showToast("Deleting folder & contents...");
-            
+        function deleteFolder(folderKey) {
+            let updates = {};
             let foldersToDelete = [folderKey];
-            let filesToDelete = [];
 
-            // Recursive function to find all sub-folders
             function findDescendants(parentId) {
                 let children = allUserFoldersGlobal.filter(f => f.parent_id === parentId);
                 children.forEach(child => {
@@ -1979,33 +3790,25 @@
             }
             findDescendants(folderKey);
 
-            // Find all files inside all these folders
             foldersToDelete.forEach(fid => {
-                let filesInFolder = allUserFilesGlobal.filter(f => f.folder_id === fid);
-                filesToDelete.push(...filesInFolder);
+                updates[`users/${currentUser.uid}/folders/${fid}/is_trashed`] = true;
+                updates[`users/${currentUser.uid}/folders/${fid}/trashed_at`] = firebase.database.ServerValue.TIMESTAMP;
+                
+                allUserFilesGlobal.filter(f => f.folder_id === fid).forEach(file => {
+                    updates[`users/${currentUser.uid}/files/${file.key}/is_trashed`] = true;
+                    updates[`users/${currentUser.uid}/files/${file.key}/trashed_at`] = firebase.database.ServerValue.TIMESTAMP;
+                });
             });
 
-            try {
-                await ensureCloudIsAwake(); 
-
-                // 1. Delete all files from Render Backend (API)
-                for (let file of filesToDelete) {
-                    await fetch(`${API_BASE_URL}/delete/${file.message_id}`, { method: 'DELETE' });
-                }
-
-                // 2. Multi-path update to delete everything from Firebase at once (0 Lag)
-                let updates = {};
-                foldersToDelete.forEach(fid => updates[`users/${currentUser.uid}/folders/${fid}`] = null);
-                filesToDelete.forEach(file => updates[`users/${currentUser.uid}/files/${file.key}`] = null);
-
-                await db.ref().update(updates);
-                
-                hideToast();
-            } catch(e) {
-                hideToast();
-                alert("Error deleting folder and its contents.");
-            }
+            db.ref().update(updates).then(() => {
+                showToast("Moved to Recycle Bin");
+                setTimeout(hideToast, 1500);
+            }).catch(e => {
+                alert("Error moving folder.");
+            });
         }
+
+        // Undo Function Removed
 
         // --- FOLDER NAVIGATION & BREADCRUMBS ---
         function updateBreadcrumbs() {
@@ -2071,6 +3874,26 @@
         // --- Hardware Back Button (History API) Logic ---
         window.addEventListener('popstate', (event) => {
             
+            // 🚨 Strict Back Button Trap for Account Deletion
+            if (window.isDeletingAccount) {
+                // ইউজার ব্যাক বাটন চাপলে তাকে আবার সামনে (Forward) ঠেলে দেওয়া হবে, যাতে ব্যাক না হয়!
+                history.pushState(null, "", location.href);
+                showToast("⚠️ Deletion in progress! Please wait.");
+                setTimeout(hideToast, 2500);
+                return;
+            }
+
+            // নিজে থেকে ক্যানসেল করলে যেন পেজ হোম এ না যায়, তার জন্য ইভেন্ট স্কিপ করা হলো
+            if (ignoreNextPopState) {
+                ignoreNextPopState = false;
+                return;
+            }
+
+            if (isSelectionMode) {
+                closeSelectionMode(true);
+                return;
+            }
+
             let actionMenu = document.getElementById('fileActionMenu');
             if (actionMenu && !actionMenu.classList.contains('hidden')) {
                 closeActionMenu(true); 
@@ -2094,6 +3917,10 @@
                 if (state.view === 'category') {
                     openCategory(state.categoryType, false);
                 } 
+                else if (state.view === 'trash') {
+                    showTab('trash', false);
+                    renderTrashList();
+                }
                 else if (state.view === 'tab') {
                     // মূল ট্যাবে ব্যাক করলে ফোল্ডার থেকে বের হয়ে রুট ফোল্ডারে চলে আসবে
                     currentFolderId = 'root';
@@ -2115,6 +3942,348 @@
                 renderAllActiveLists();
             }
         });
+
+        // ==========================================
+        //         --- PROFILE PICTURE LOGIC ---
+        // ==========================================
+        document.getElementById('profilePicInput').addEventListener('change', function(e) {
+            let file = e.target.files[0];
+            if (!file) return;
+
+            // শুধুমাত্র ইমেজ সাপোর্ট করবে
+            if (!file.type.startsWith('image/')) {
+                showToast("Please select a valid image file!");
+                setTimeout(hideToast, 2000);
+                return;
+            }
+
+            showToast("Updating profile picture...");
+
+            let reader = new FileReader();
+            reader.onload = function(event) {
+                let img = new Image();
+                img.onload = function() {
+                    // ক্যানভাসে ছবি ছোট করা (Compression)
+                    let canvas = document.createElement('canvas');
+                    let ctx = canvas.getContext('2d');
+                    
+                    // ম্যাক্সিমাম সাইজ ১৫০x১৫০ পিক্সেল (যাতে ডাটাবেস ফাস্ট থাকে)
+                    let maxW = 150, maxH = 150;
+                    let width = img.width, height = img.height;
+                    
+                    if (width > height) {
+                        if (width > maxW) { height *= maxW / width; width = maxW; }
+                    } else {
+                        if (height > maxH) { width *= maxH / height; height = maxH; }
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // Base64 জেনারেট করা (quality 0.7 for size reduction)
+                    let base64String = canvas.toDataURL('image/jpeg', 0.7);
+                    
+                    // ফায়ারবেসে সেভ করা
+                    db.ref(`users/${currentUser.uid}/account_info/profile_pic`).set(base64String).then(() => {
+                        hideToast();
+                        showToast("Profile picture updated!");
+                        setTimeout(hideToast, 2000);
+                    }).catch((error) => {
+                        hideToast();
+                        alert("Error updating picture: " + error.message);
+                    });
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+            
+            // ইনপুট ক্লিয়ার করা যাতে একই ছবি আবার সিলেক্ট করা যায়
+            this.value = '';
+        });
+
+        // ==========================================
+        //         --- PROFILE SETTINGS LOGIC ---
+        // ==========================================
+
+        // 1. Edit Name Logic
+        function openEditNameModal() {
+            let currentName = document.getElementById('userNameDisplay').innerText;
+            document.getElementById('newProfileNameInput').value = currentName;
+            
+            let modal = document.getElementById('editNameModal');
+            let box = document.getElementById('editNameBox');
+            let overlay = document.getElementById('editNameOverlay');
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                overlay.classList.remove('opacity-0');
+                box.classList.remove('scale-95', 'opacity-0');
+                document.getElementById('newProfileNameInput').focus();
+            }, 10);
+        }
+
+        function closeEditNameModal() {
+            let modal = document.getElementById('editNameModal');
+            let box = document.getElementById('editNameBox');
+            let overlay = document.getElementById('editNameOverlay');
+            
+            overlay.classList.add('opacity-0');
+            box.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        function saveNewProfileName() {
+            let newName = document.getElementById('newProfileNameInput').value.trim();
+            if(!newName) {
+                showToast("Name cannot be empty!");
+                setTimeout(hideToast, 2000);
+                return;
+            }
+            
+            let btn = document.getElementById('btnSaveName');
+            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i>`;
+            btn.disabled = true;
+
+            db.ref(`users/${currentUser.uid}/account_info/name`).set(newName).then(() => {
+                closeEditNameModal();
+                showToast("Name updated successfully!");
+                setTimeout(hideToast, 2000);
+            }).catch(e => alert(e.message)).finally(() => {
+                btn.innerHTML = `Save`;
+                btn.disabled = false;
+            });
+        }
+
+        // 2. Change Password Logic (With Re-authentication)
+        function openChangePasswordModal() {
+            document.getElementById('currentPasswordInput').value = ''; 
+            document.getElementById('newPasswordInput').value = ''; 
+            
+            let modal = document.getElementById('changePassModal');
+            let box = document.getElementById('changePassBox');
+            let overlay = document.getElementById('changePassOverlay');
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                overlay.classList.remove('opacity-0');
+                box.classList.remove('scale-95', 'opacity-0');
+                document.getElementById('currentPasswordInput').focus();
+            }, 10);
+        }
+
+        function closeChangePasswordModal() {
+            let modal = document.getElementById('changePassModal');
+            let box = document.getElementById('changePassBox');
+            let overlay = document.getElementById('changePassOverlay');
+            
+            overlay.classList.add('opacity-0');
+            box.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        function saveNewPassword() {
+            let currentPass = document.getElementById('currentPasswordInput').value;
+            let newPass = document.getElementById('newPasswordInput').value;
+            
+            if(!currentPass) {
+                showToast("Please enter your current password!");
+                setTimeout(hideToast, 2000);
+                return;
+            }
+            if(newPass.length < 6) {
+                showToast("New password must be at least 6 characters!");
+                setTimeout(hideToast, 2000);
+                return;
+            }
+            
+            let btn = document.getElementById('btnSavePass');
+            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i>`;
+            btn.disabled = true;
+
+            // Re-authenticate user first using current password
+            let credential = firebase.auth.EmailAuthProvider.credential(currentUser.email, currentPass);
+            
+            currentUser.reauthenticateWithCredential(credential).then(() => {
+                // Now update to the new password
+                return currentUser.updatePassword(newPass);
+            }).then(() => {
+                closeChangePasswordModal();
+                showToast("Password updated successfully!");
+                setTimeout(hideToast, 2000);
+            }).catch(error => {
+                if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                    showToast("Current password is incorrect!");
+                } else if (error.code === 'auth/too-many-requests') {
+                    showToast("Too many attempts. Try again later.");
+                } else {
+                    showToast("An error occurred. Please try again.");
+                }
+                setTimeout(hideToast, 3000);
+            }).finally(() => {
+                btn.innerHTML = `Update`;
+                btn.disabled = false;
+            });
+        }
+
+        // 3. Delete Account Logic (With Re-authentication & 3s Timer)
+        let deleteTimerInterval;
+        
+        function openDeleteAccountModal() {
+            document.getElementById('deleteAccPasswordInput').value = '';
+            let modal = document.getElementById('deleteAccModal');
+            let box = document.getElementById('deleteAccBox');
+            let overlay = document.getElementById('deleteAccOverlay');
+            let btn = document.getElementById('btnConfirmDeleteAcc');
+            
+            // বাটন ডিজেবল করে ৩ সেকেন্ডের টাইমার চালু করা
+            btn.disabled = true;
+            let secondsLeft = 3;
+            btn.innerHTML = `Wait ${secondsLeft}s...`;
+            
+            clearInterval(deleteTimerInterval);
+            deleteTimerInterval = setInterval(() => {
+                secondsLeft--;
+                if(secondsLeft > 0) {
+                    btn.innerHTML = `Wait ${secondsLeft}s...`;
+                } else {
+                    clearInterval(deleteTimerInterval);
+                    btn.disabled = false;
+                    btn.innerHTML = `<i class="fa-solid fa-trash-can"></i> Yes, Delete My Account`;
+                }
+            }, 1000);
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                overlay.classList.remove('opacity-0');
+                box.classList.remove('scale-95', 'opacity-0');
+                document.getElementById('deleteAccPasswordInput').focus();
+            }, 10);
+        }
+
+        function closeDeleteAccountModal() {
+            clearInterval(deleteTimerInterval); // কেউ আগে ক্লোজ করে দিলে টাইমার বন্ধ করে দেওয়া হবে
+            let modal = document.getElementById('deleteAccModal');
+            let box = document.getElementById('deleteAccBox');
+            let overlay = document.getElementById('deleteAccOverlay');
+            
+            overlay.classList.add('opacity-0');
+            box.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        async function confirmDeleteAccount() {
+            if (isUploading || uploadQueue.length > 0) {
+                showToast("⚠️ Please wait for uploads to finish or cancel them first!");
+                setTimeout(hideToast, 3500);
+                closeDeleteAccountModal();
+                return;
+            }
+
+            let password = document.getElementById('deleteAccPasswordInput').value;
+            if(!password) {
+                showToast("Please enter your password to confirm!");
+                setTimeout(hideToast, 2000);
+                return;
+            }
+
+            let btn = document.getElementById('btnConfirmDeleteAcc');
+            let btnCancel = document.getElementById('btnCancelDeleteAcc'); 
+            
+            // 🚨 UI Update: Lock activation
+            window.isDeletingAccount = true; // গ্লোবাল ভেরিয়েবলে সেট করা হলো
+            btn.disabled = true;
+            btnCancel.disabled = true; 
+            
+            // Full Screen Lock Show করা ও Back Button Trap চালু করা
+            closeDeleteAccountModal();
+            document.getElementById('fullScreenLock').classList.replace('hidden', 'flex');
+            history.pushState(null, "", location.href); // Dummy state pushed to trap back button
+
+            try {
+                await ensureCloudIsAwake();
+
+                let credential = firebase.auth.EmailAuthProvider.credential(currentUser.email, password);
+                await currentUser.reauthenticateWithCredential(credential);
+
+                let messageIdsToDelete = [];
+                allUserFilesGlobal.forEach(f => { if(f.message_id) messageIdsToDelete.push(f.message_id); });
+                allTrashedFilesGlobal.forEach(f => { if(f.message_id) messageIdsToDelete.push(f.message_id); });
+
+                if (messageIdsToDelete.length > 0) {
+                    let token = await currentUser.getIdToken();
+                    let res = await fetch(`${API_BASE_URL}/bulk-delete`, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + token
+                        },
+                        body: JSON.stringify({ message_ids: messageIdsToDelete })
+                    });
+                    if (!res.ok) throw new Error("Server failed to delete files. Try again.");
+                }
+
+                window.isAccountDeleted = true;
+                if (window.presenceInterval) clearInterval(window.presenceInterval);
+
+                await db.ref(`users/${currentUser.uid}/account_info/is_online`).onDisconnect().cancel();
+                await db.ref(`users/${currentUser.uid}/account_info/last_active`).onDisconnect().cancel();
+
+                await db.ref(`users/${currentUser.uid}`).remove();
+                await currentUser.delete();
+
+                // 🚨 Smooth Success Animation (No more shaking/jerking)
+                let lockScreen = document.getElementById('fullScreenLock');
+                lockScreen.innerHTML = `
+                    <div class="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(34,197,94,0.3)] fade-in">
+                        <i class="fa-solid fa-check text-5xl text-green-500"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-white mb-2 fade-in">Account Deleted</h2>
+                    <p class="text-slate-400 text-sm px-8 fade-in">All your data has been permanently wiped.</p>
+                `;
+
+                // ২ সেকেন্ড সাকসেস অ্যানিমেশন দেখিয়ে তারপর স্মুথলি রিলোড হবে
+                setTimeout(() => {
+                    window.isDeletingAccount = false;
+                    window.location.reload(); 
+                }, 2000);
+
+            } catch(error) {
+                window.isAccountDeleted = false;
+                window.isDeletingAccount = false; // Error হলে Lock মুক্ত করা হলো
+                
+                // Full Screen Lock Hide করা
+                document.getElementById('fullScreenLock').classList.replace('flex', 'hidden');
+
+                if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                    showToast("Incorrect password!");
+                    openDeleteAccountModal(); // আবার পাসওয়ার্ড দেওয়ার জন্য মডেল ওপেন
+                } else if (error.code === 'auth/too-many-requests') {
+                    showToast("Too many attempts. Try again later.");
+                } else {
+                    alert("Error Details: " + error.message);
+                    showToast("An error occurred. Please try again.");
+                }
+                setTimeout(hideToast, 3000);
+                
+                // Re-enable buttons if failed
+                btn.innerHTML = `Yes, Delete My Account`;
+                btn.disabled = false;
+                btnCancel.disabled = false;
+            }
+        }
     </script>
 </body>
 </html>
