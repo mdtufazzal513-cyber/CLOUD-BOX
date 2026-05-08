@@ -849,8 +849,10 @@
     </div>
 
     <script>
-        // আপনার Render ব্যাকএন্ডের লিংক এখানে সেট করা হয়েছে
-        const API_BASE_URL = "https://cloud-storage-ozsx.onrender.com";
+        // 🚀 SMART LOAD BALANCER: ফায়ারবেস থেকে ডাইনামিক সার্ভার লিস্ট আসবে
+        let DEFAULT_API_URL = "https://cloud-storage-k2my.onrender.com"; // আপনার মেইন লিংক
+        let activeWorkerServers = [DEFAULT_API_URL];
+        let currentWorkerIndex = 0;
 
         // 1. Firebase Configuration
         const firebaseConfig = {
@@ -1456,7 +1458,8 @@
         function logout() { auth.signOut(); }
 
         // 4. UI Navigation & View Mode Settings
-        let TOTAL_STORAGE_LIMIT = parseFloat(localStorage.getItem('cachedStorageLimit')) || (25 * 1024 * 1024 * 1024); // LocalCache or Default 25 GB
+        // ডিফল্ট ২৫ জিবি রিমুভ করা হয়েছে। এখন শুধুমাত্র ডাটাবেস (এডমিন প্যানেল) বা লোকাল ক্যাশ ফলো করবে।
+        let TOTAL_STORAGE_LIMIT = parseFloat(localStorage.getItem('cachedStorageLimit')) || 0; 
         let CURRENT_TOTAL_USAGE = 0; // বর্তমান স্টোরেজ ট্র্যাকিং
         let allUserFilesGlobal =[]; 
 
@@ -1465,8 +1468,12 @@
             if(snap.exists()) {
                 TOTAL_STORAGE_LIMIT = snap.val();
                 localStorage.setItem('cachedStorageLimit', TOTAL_STORAGE_LIMIT); // Save for next reload without flash
-                if(currentUser) updateStorageUI(CURRENT_TOTAL_USAGE); // রিয়েলটাইমে UI আপডেট
+            } else {
+                // যদি এডমিন প্যানেল থেকে কোনো লিমিট সেট করা না থাকে, তবে লিমিট 0 থাকবে
+                TOTAL_STORAGE_LIMIT = 0;
+                localStorage.setItem('cachedStorageLimit', 0);
             }
+            if(currentUser) updateStorageUI(CURRENT_TOTAL_USAGE); // রিয়েলটাইমে UI আপডেট
         });
 
         // 🚨 Dynamic Max Upload File Size Fetcher
@@ -1490,7 +1497,15 @@
         // 🎨 Smart UI Capper (১০০% এর বেশি হলে গোল বার ফাটবে না, লাল হয়ে যাবে)
         function updateStorageUI(totalSize) {
             CURRENT_TOTAL_USAGE = totalSize;
-            let percentRaw = (totalSize / TOTAL_STORAGE_LIMIT) * 100;
+            
+            // 🚨 Division by Zero (Infinity/NaN) ফিক্স করা হলো, যদি এডমিন প্যানেলে লিমিট 0 থাকে
+            let percentRaw = 0;
+            if (TOTAL_STORAGE_LIMIT > 0) {
+                percentRaw = (totalSize / TOTAL_STORAGE_LIMIT) * 100;
+            } else if (TOTAL_STORAGE_LIMIT === 0 && totalSize > 0) {
+                percentRaw = 100; // লিমিট 0, কিন্তু ইউজারের ফাইল আছে মানে স্টোরেজ 100% ফুল
+            }
+            
             let percentDisplay = percentRaw > 100 ? 100 : percentRaw; // Capping at 100%
             
             let circle = document.getElementById('storageProgress');
@@ -1936,12 +1951,13 @@
             let statusText = card.querySelector('.status-text');
             let cancelBtn = card.querySelector('.cancel-btn');
 
+            let targetServerUrl = DEFAULT_API_URL;
             try {
-                if (Date.now() - lastAwakeTime >= 10 * 60 * 1000) {
-                    statusText.innerText = "Connecting to cloud...";
+                if (Date.now() - lastAwakeTime >= 5 * 60 * 1000) {
+                    statusText.innerText = "Finding active server...";
                     statusText.className = "text-[11px] font-semibold text-yellow-400 status-text tracking-wide";
                 }
-                await ensureCloudIsAwake(); 
+                targetServerUrl = await ensureCloudIsAwake(); 
             } catch(e) {
                 handleFailedUpload("Network Error!");
                 return;
@@ -1956,8 +1972,9 @@
 
             let token = await currentUser.getIdToken();
             let xhr = new XMLHttpRequest();
-            // API_BASE_URL অ্যাড করা হয়েছে
-            xhr.open("POST", API_BASE_URL + "/upload/", true);
+            
+            // ডাইনামিক রাউটিং: যে সার্ভার ফ্রি আছে তাকে দিয়ে আপলোড করানো হচ্ছে
+            xhr.open("POST", targetServerUrl + "/upload/", true);
             xhr.setRequestHeader("Authorization", "Bearer " + token);
             
             // XHR ট্র্যাকিংয়ে অ্যাড করা হলো (যাতে ৩০ সেকেন্ড পর ফোর্স ক্যানসেল করা যায়)
@@ -2017,13 +2034,23 @@
                             setTimeout(() => { card.style.display = 'none'; }, 3000);
                             finishUploadTask();
                             return;
+                        } else {
+                            handleFailedUpload("Error: " + (result.message || "Unknown"));
+                            return;
                         }
                     } catch(e) {
-                        handleFailedUpload("Server waking up. Retry!");
+                        handleFailedUpload("Server error. Retry!");
                         return;
                     }
                 }
-                handleFailedUpload("Upload Failed!");
+                
+                // ম্যাজিক: সার্ভারের আসল এরর মেসেজটি বের করে স্ক্রিনে দেখানো হবে
+                try {
+                    let errResult = JSON.parse(xhr.responseText);
+                    handleFailedUpload(errResult.message ? "Error: " + errResult.message : "Upload Failed! (" + xhr.status + ")");
+                } catch(e) {
+                    handleFailedUpload("Upload Failed! Code: " + xhr.status);
+                }
             };
 
             xhr.onerror = function() {
@@ -2607,8 +2634,46 @@ if (snapshot.exists()) {
             }
         });
 
+        // ফায়ারবেস থেকে ওয়ার্কার সার্ভারের লিস্ট ফেচ করা
+        db.ref('system_settings/worker_servers').on('value', snap => {
+            if(snap.exists()) {
+                activeWorkerServers = snap.val().split(',').map(url => url.trim().replace(/\/$/, ""));
+            }
+        });
+
+        // 🚀 SMART ROUTER: যে সার্ভার জেগে আছে তাকে খুঁজে বের করা (Round-Robin Fallback)
+        async function getHealthyServer() {
+            let startIndex = currentWorkerIndex;
+            let checkedServers = 0;
+            let totalServers = activeWorkerServers.length;
+
+            while (checkedServers < totalServers) {
+                let targetUrl = activeWorkerServers[currentWorkerIndex];
+                currentWorkerIndex = (currentWorkerIndex + 1) % totalServers; // পরবর্তী বারের জন্য ইনডেক্স ঘুরিয়ে রাখা হলো
+                
+                try {
+                    // সার্ভারকে পিং করে দেখা সে জেগে আছে কিনা (Max wait time 3 seconds)
+                    let controller = new AbortController();
+                    let timeoutId = setTimeout(() => controller.abort(), 3000);
+                    
+                    let res = await fetch(targetUrl + '/ping', { signal: controller.signal });
+                    clearTimeout(timeoutId);
+                    
+                    if (res.ok) {
+                        return targetUrl; // সার্ভার জেগে আছে এবং রেডি!
+                    }
+                } catch(e) {
+                    console.log(`Server ${targetUrl} is offline or sleeping. Trying next...`);
+                }
+                checkedServers++;
+            }
+            // যদি কোনো সার্ভারই রেসপন্স না দেয়, তবে প্রথমটাই রিটার্ন করবে (শেষ ভরসা)
+            return activeWorkerServers[0] || DEFAULT_API_URL;
+        }
+
         // 7. Universal Cloud Wake-up System
         let lastAwakeTime = 0; 
+        let currentActiveServerURL = DEFAULT_API_URL; // যে সার্ভারটি সিলেক্ট হবে
 
         function showToast(msg) {
             let toast = document.getElementById('toastNotification');
@@ -2630,25 +2695,26 @@ if (snapshot.exists()) {
         }
 
         async function ensureCloudIsAwake() {
-            if (Date.now() - lastAwakeTime < 10 * 60 * 1000) return true; 
+            // যদি গত ৫ মিনিটের মধ্যে কোনো সার্ভার চেক করা থাকে, তবে নতুন করে চেক করবে না
+            if (Date.now() - lastAwakeTime < 5 * 60 * 1000 && currentActiveServerURL) {
+                return currentActiveServerURL; 
+            }
 
             let serverResponded = false;
             let toastTimer = setTimeout(() => {
-                if (!serverResponded) showToast("Connecting to cloud...");
-            }, 1000);
+                if (!serverResponded) showToast("Finding active server...");
+            }, 500);
 
             try {
-                // API_BASE_URL অ্যাড করা হয়েছে
-                let res = await fetch(API_BASE_URL + '/ping');
+                // স্মার্ট রাউটার দিয়ে একটি সুস্থ (Healthy) সার্ভার খুঁজে বের করা
+                currentActiveServerURL = await getHealthyServer();
+                
                 serverResponded = true;
                 clearTimeout(toastTimer);
                 hideToast();
                 
                 lastAwakeTime = Date.now();
-                if (!(res.ok && res.headers.get("content-type") && res.headers.get("content-type").includes("application/json"))) {
-                    await new Promise(r => setTimeout(r, 2000)); 
-                }
-                return true;
+                return currentActiveServerURL;
             } catch(e) {
                 clearTimeout(toastTimer);
                 hideToast();
@@ -2672,11 +2738,11 @@ if (snapshot.exists()) {
             btnElement.disabled = true;
 
             try {
-                await ensureCloudIsAwake(); 
+                let activeAPI = await ensureCloudIsAwake(); 
                 let safeMessageId = encodeURIComponent(messageId);
-                triggerDownload(`${API_BASE_URL}/download/${safeMessageId}/${encodedFileName}`);
+                triggerDownload(`${activeAPI}/download/${safeMessageId}/${encodedFileName}`);
             } catch(e) {
-                if (e.message.includes("503")) showToast("Server busy, try again in 5 sec");
+                if (e.message && e.message.includes("503")) showToast("Server busy, try again in 5 sec");
                 else alert("Network error. Please check your connection.");
             } finally {
                 setTimeout(() => {
@@ -2724,13 +2790,16 @@ if (snapshot.exists()) {
                     return;
                 }
 
+                // ডাইনামিক রাউটিং: জেগে থাকা সার্ভারটিকে জিপ বানানোর দায়িত্ব দেওয়া হলো
+                let activeAPI = await ensureCloudIsAwake();
+
                 // স্টেপ ১: সার্ভারে ডাটা পাঠিয়ে জিপ রেডি করতে বলা
                 let formData = new FormData();
                 formData.append("folder_name", folderName);
                 formData.append("files_data", JSON.stringify(filesToZip));
 
                 let token = await currentUser.getIdToken();
-                let response = await fetch(`${API_BASE_URL}/prepare-zip`, {
+                let response = await fetch(`${activeAPI}/prepare-zip`, {
                     method: 'POST',
                     headers: { 'Authorization': 'Bearer ' + token },
                     body: formData
@@ -2741,7 +2810,7 @@ if (snapshot.exists()) {
                 // স্টেপ ২: সার্ভার জিপ রেডি করে লিংক দিলে সেটি দিয়ে ডিরেক্ট ডাউনলোড ট্রিগার করা
                 if (response.ok && result.status === "ready") {
                     hideToast();
-                    triggerDownload(`${API_BASE_URL}${result.download_url}`);
+                    triggerDownload(`${activeAPI}${result.download_url}`);
                 } else {
                     hideToast();
                     alert("Error: " + (result.error || "Failed to generate ZIP"));
@@ -2929,13 +2998,13 @@ if (snapshot.exists()) {
             if(!confirm("Delete this item FOREVER? This cannot be undone!")) return;
             showToast("Deleting permanently...");
             try {
-                await ensureCloudIsAwake();
+                let activeAPI = await ensureCloudIsAwake();
                 let updates = {};
                 
                 if (type === 'file') {
                     let token = await currentUser.getIdToken();
                     let safeMessageId = encodeURIComponent(messageId);
-                    let res = await fetch(`${API_BASE_URL}/delete/${safeMessageId}`, { 
+                    let res = await fetch(`${activeAPI}/delete/${safeMessageId}`, { 
                         method: 'DELETE',
                         headers: { 'Authorization': 'Bearer ' + token }
                     });
@@ -2964,7 +3033,7 @@ if (snapshot.exists()) {
                     folders.forEach(fid => updates[`users/${currentUser.uid}/folders/${fid}`] = null);
                     
                     if (messageIdsToDelete.length > 0) {
-                        let res = await fetch(`${API_BASE_URL}/bulk-delete`, {
+                        let res = await fetch(`${activeAPI}/bulk-delete`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ message_ids: messageIdsToDelete })
@@ -2999,7 +3068,8 @@ if (snapshot.exists()) {
                 
                 if (messageIdsToDelete.length > 0) {
                     let token = await currentUser.getIdToken();
-                    let res = await fetch(`${API_BASE_URL}/bulk-delete`, {
+                    let activeAPI = await ensureCloudIsAwake();
+                    let res = await fetch(`${activeAPI}/bulk-delete`, {
                         method: 'POST',
                         headers: { 
                             'Content-Type': 'application/json',
@@ -3414,7 +3484,7 @@ if (snapshot.exists()) {
                 showToast(`Starting ${files.length} downloads...`);
                 
                 try {
-                    await ensureCloudIsAwake();
+                    let activeAPI = await ensureCloudIsAwake();
                     hideToast();
                     
                     for (let i = 0; i < files.length; i++) {
@@ -3423,7 +3493,7 @@ if (snapshot.exists()) {
                             let safeBackendName = fData.file_name.replace(/[^a-zA-Z0-9.\-_]/g, '_').replace(/_+/g, '_');
                             let encodedName = encodeURIComponent(safeBackendName);
                             let safeMessageId = encodeURIComponent(fData.message_id);
-                            triggerDownload(`${API_BASE_URL}/download/${safeMessageId}/${encodedName}`);
+                            triggerDownload(`${activeAPI}/download/${safeMessageId}/${encodedName}`);
                             await new Promise(resolve => setTimeout(resolve, 1500)); 
                         }
                     }
@@ -4224,7 +4294,8 @@ db.ref().update(updates).then(() => {
 
                 if (messageIdsToDelete.length > 0) {
                     let token = await currentUser.getIdToken();
-                    let res = await fetch(`${API_BASE_URL}/bulk-delete`, {
+                    let activeAPI = currentActiveServerURL || DEFAULT_API_URL;
+                    let res = await fetch(`${activeAPI}/bulk-delete`, {
                         method: 'POST',
                         headers: { 
                             'Content-Type': 'application/json',
